@@ -1,0 +1,205 @@
+---
+output: html_document
+---
+
+```{r in-season-table, echo=FALSE, message=FALSE, warning=FALSE}
+this_season_long <- lake1 %>% 
+filter(year == report_year) %>% 
+  distinct(SAMPLE_ID, INFO_TYPE, Characteristic.Name, Result.Sample.Fraction, Result.Value, .keep_all = TRUE) %>% 
+  group_by(SAMPLE_DATE, Characteristic.Name, Result.Sample.Fraction, INFO_TYPE) %>% 
+  summarize(RESULT_VALUE = mean(as.numeric(Result.Value))) %>% 
+  ungroup()
+
+tn_df <- this_season_long %>% 
+  filter(Characteristic.Name == "NITROGEN, TOTAL") %>% 
+  rename(TNITR = RESULT_VALUE) %>% 
+  select(SAMPLE_DATE, TNITR)
+
+tp_df<- this_season_long %>% 
+  filter(Characteristic.Name == "PHOSPHORUS" & Result.Sample.Fraction == "T" & INFO_TYPE == "OW") %>% 
+  rename(TPHOS = RESULT_VALUE) %>% 
+  select(SAMPLE_DATE, TPHOS)
+
+tntp_df <- full_join(tn_df, tp_df) %>% 
+  mutate(RESULT_VALUE = TNITR/TPHOS) %>% 
+  mutate(FULL_CHARACTERISTIC_NAME = "TN:TP") %>% 
+  select(SAMPLE_DATE, FULL_CHARACTERISTIC_NAME, RESULT_VALUE) %>% 
+  filter(RESULT_VALUE != "NA")
+  
+this_season_long$Result.Sample.Fraction <- replace_na(this_season_long$Result.Sample.Fraction, "None")
+
+this_season_long <- this_season_long %>% 
+  mutate(FULL_CHARACTERISTIC_NAME = paste(Characteristic.Name, INFO_TYPE, Result.Sample.Fraction, sep=" ")) %>% 
+  select(SAMPLE_DATE, FULL_CHARACTERISTIC_NAME, RESULT_VALUE)
+
+this_season_long_fulldate <- full_join(this_season_long, tntp_df) %>% 
+  filter(FULL_CHARACTERISTIC_NAME %in% c("DEPTH, SECCHI DISK DEPTH SD None",
+                                         "PHOSPHORUS OW T",
+                                         "PHOSPHORUS OW D", 
+                                         "PHOSPHORUS BS T",
+                                         "PHOSPHORUS BS D",
+                                         "NITROGEN, TOTAL OW T",
+                                         "NITROGEN, TOTAL DISSOLVED OW D",
+                                         "TN:TP",
+                                         "AMMONIA OW T",
+                                         "AMMONIA BS T",
+                                         "CHLOROPHYLL A OW T",
+                                         "PH OW None",
+                                         "SPECIFIC CONDUCTANCE OW None",
+                                         "CALCIUM OW T",
+                                         "CALCIUM BS T",
+                                         "CHLORIDE OW T",
+                                         "CHLORIDE BS T",
+                                         "TEMPERATURE, WATER OW None",
+                                         "TEMPERATURE, WATER BS None",
+                                         "CHLOROPHYLL A (PROBE RELATIVE FLUORESCENCE) OW None"
+                                         ))
+  
+
+this_season_long_shortdate <- full_join(this_season_long, tntp_df) %>% 
+  mutate(SAMPLE_DATE_SHORT = substring(SAMPLE_DATE, first = 6, last = 10)) %>% 
+  select(!SAMPLE_DATE) %>% 
+  filter(FULL_CHARACTERISTIC_NAME %in% c("DEPTH, SECCHI DISK DEPTH SD None",
+                                         "PHOSPHORUS OW T",
+                                         "PHOSPHORUS OW D", 
+                                         "PHOSPHORUS BS T",
+                                         "PHOSPHORUS BS D",
+                                         "NITROGEN, TOTAL OW T",
+                                         "NITROGEN, TOTAL DISSOLVED OW D",
+                                         "TN:TP",
+                                         "AMMONIA OW T",
+                                         "AMMONIA BS T",
+                                         "CHLOROPHYLL A OW T",
+                                         "PH OW None",
+                                         "SPECIFIC CONDUCTANCE OW None",
+                                         "CALCIUM OW T",
+                                         "CALCIUM BS T",
+                                         "CHLORIDE OW T",
+                                         "CHLORIDE BS T",
+                                         "TEMPERATURE, WATER OW None",
+                                         "TEMPERATURE, WATER BS None",
+                                         "CHLOROPHYLL A (PROBE RELATIVE FLUORESCENCE) OW None"
+                                         ))
+
+
+list_of_dates <- as.vector(as.character(this_season_long_shortdate$SAMPLE_DATE_SHORT)) %>% 
+  unique()
+
+this_season_wide <- spread(this_season_long_shortdate, SAMPLE_DATE_SHORT, RESULT_VALUE)
+
+table_list <- data.frame(FULL_CHARACTERISTIC_NAME = c("DEPTH, SECCHI DISK DEPTH SD None",
+                                         "PHOSPHORUS OW T",
+                                         "PHOSPHORUS OW D", 
+                                         "PHOSPHORUS BS T",
+                                         "PHOSPHORUS BS D",
+                                         "NITROGEN, TOTAL OW T",
+                                         "NITROGEN, TOTAL DISSOLVED OW D",
+                                         "TN:TP",
+                                         "AMMONIA OW T",
+                                         "AMMONIA BS T",
+                                         "CHLOROPHYLL A OW T",
+                                         "PH OW None",
+                                         "SPECIFIC CONDUCTANCE OW None",
+                                         "CALCIUM OW T",
+                                         "CALCIUM BS T",
+                                         "CHLORIDE OW T",
+                                         "CHLORIDE BS T",
+                                         "TEMPERATURE, WATER OW None",
+                                         "TEMPERATURE, WATER BS None",
+                                         "CHLOROPHYLL A (PROBE RELATIVE FLUORESCENCE) OW None"
+                                         ))
+owi_table <- left_join(table_list, this_season_wide, by= "FULL_CHARACTERISTIC_NAME")
+
+owi_table$DISPLAY_NAME[owi_table$FULL_CHARACTERISTIC_NAME == "DEPTH, SECCHI DISK DEPTH SD None"] <- "Clarity (m)"
+owi_table$DISPLAY_NAME[owi_table$FULL_CHARACTERISTIC_NAME == "PHOSPHORUS OW T"] <- "Surface TP (mg/L)"
+owi_table$DISPLAY_NAME[owi_table$FULL_CHARACTERISTIC_NAME == "PHOSPHORUS OW D"] <- "Surface TDP (mg/L)"
+owi_table$DISPLAY_NAME[owi_table$FULL_CHARACTERISTIC_NAME == "PHOSPHORUS BS T"] <- "Deep TP (mg/L)"
+owi_table$DISPLAY_NAME[owi_table$FULL_CHARACTERISTIC_NAME == "PHOSPHORUS BS D"] <- "Deep TDP (mg/L)"
+owi_table$DISPLAY_NAME[owi_table$FULL_CHARACTERISTIC_NAME == "NITROGEN, TOTAL OW T"] <- "TN (mg/L)"
+owi_table$DISPLAY_NAME[owi_table$FULL_CHARACTERISTIC_NAME == "NITROGEN, TOTAL DISSOLVED OW D"] <- "TDN (mg/L)"
+owi_table$DISPLAY_NAME[owi_table$FULL_CHARACTERISTIC_NAME == "AMMONIA OW T"] <- "Surface NH3 (mg/L)"
+owi_table$DISPLAY_NAME[owi_table$FULL_CHARACTERISTIC_NAME == "AMMONIA BS T"] <- "Deep NH3 (mg/L)"
+owi_table$DISPLAY_NAME[owi_table$FULL_CHARACTERISTIC_NAME == "CHLOROPHYLL A OW T"] <- "Chl.a (ug/L)"
+owi_table$DISPLAY_NAME[owi_table$FULL_CHARACTERISTIC_NAME == "PH OW None"] <- "pH"
+owi_table$DISPLAY_NAME[owi_table$FULL_CHARACTERISTIC_NAME == "SPECIFIC CONDUCTANCE OW None"] <- "Cond (umho/cm)"
+owi_table$DISPLAY_NAME[owi_table$FULL_CHARACTERISTIC_NAME == "CALCIUM OW T"] <- "Surface Calcium (mg/L)"
+owi_table$DISPLAY_NAME[owi_table$FULL_CHARACTERISTIC_NAME == "CALCIUM BS T"] <- "Bottom Calcium (mg/L)"
+owi_table$DISPLAY_NAME[owi_table$FULL_CHARACTERISTIC_NAME == "CHLORIDE OW T"] <- "Surface Chloride (mg/L)"
+owi_table$DISPLAY_NAME[owi_table$FULL_CHARACTERISTIC_NAME == "CHLORIDE BS T"] <- "Bottom Chloride (mg/L)"
+owi_table$DISPLAY_NAME[owi_table$FULL_CHARACTERISTIC_NAME == "TEMPERATURE, WATER OW None"] <- "Upper Temp (degC)"
+owi_table$DISPLAY_NAME[owi_table$FULL_CHARACTERISTIC_NAME == "TEMPERATURE, WATER BS None"] <- "Deep Temp (degC)"
+owi_table$DISPLAY_NAME[owi_table$FULL_CHARACTERISTIC_NAME == "TEMPERATURE, WATER BS None"] <- "Deep Temp (degC)"
+owi_table$DISPLAY_NAME[owi_table$FULL_CHARACTERISTIC_NAME == "CHLOROPHYLL A (PROBE RELATIVE FLUORESCENCE) OW None"] <- "FP BG Chl.a (ug/L)"
+owi_table$DISPLAY_NAME[owi_table$FULL_CHARACTERISTIC_NAME == "TN:TP"] <- "TN:TP"
+
+label1<- paste(report_year, "Sampling Results")
+
+
+##for(i in seq_along(owi_table$open)) {
+  # gtobj <- gtobj %>%
+       #  tab_style(style = cell_fill(color = ht_values[i]),
+               #    locations = cells_body(columns = "open", rows = i))
+#}
+
+
+
+#tab_style(
+#    style = list(
+#      cell_fill(color = "#D9654B")
+#    ),
+#    locations = cells_body(
+#      columns = "Clarity (m)" >= "5")
+#  )
+
+###Include characteristic name in data, infotype, and result fraction as columns and then hide them
+###easiest to merge with other dfs for averages, plots, etv
+
+###Creating df with FULL CHARACTERISTIC NAME and SEASONAL CHANGE PLOT
+
+
+if(nrow(this_season_long)!= 0){
+
+plot_tble <- this_season_long_fulldate %>%
+  nest_by(FULL_CHARACTERISTIC_NAME) %>%
+  rowwise() %>%
+  mutate(
+    seasonal.change = (
+      ggplot(data = data,
+             aes(x = SAMPLE_DATE, y = RESULT_VALUE)) +
+        geom_line(color = "blue", size=10) +
+        theme_void()
+    ) %>%
+      ggplot_image(height = px(20), aspect_ratio = 4),
+    data = NULL
+  ) 
+
+owi_withplots <- left_join(owi_table, plot_tble)  
+
+make_table <- owi_withplots %>% 
+  gt() %>% 
+  tab_spanner(
+    label = label1,
+    columns=vars(list_of_dates)) %>% 
+  fmt_number(columns = vars(list_of_dates), decimals = 2) %>% 
+  cols_label(DISPLAY_NAME = "Open Water Indicators",
+             seasonal.change = "Seasonal Change") %>% 
+   fmt_missing(
+    columns=vars(list_of_dates, seasonal.change),
+    missing_text = " ") %>% 
+  fmt_markdown(vars(seasonal.change)) %>% 
+  cols_hide(columns = vars(FULL_CHARACTERISTIC_NAME)) %>% 
+  cols_move_to_start(vars(DISPLAY_NAME)) %>% 
+  cols_align(align="center", columns = vars(list_of_dates)) %>% 
+  cols_align(align="center", columns = vars(seasonal.change)) %>% 
+  cols_align(columns=vars(DISPLAY_NAME), align="left") %>% 
+  tab_options(column_labels.background.color = "grey",
+              row_group.background.color = "grey")
+
+make_table
+}
+
+
+
+
+
+```

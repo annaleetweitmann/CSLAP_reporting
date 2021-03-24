@@ -1,0 +1,60 @@
+---
+output: html_document
+---
+
+```{r setup, include=FALSE, message=FALSE, warning=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(ggimage)
+library(ggthemes)
+library(lubridate)
+library(ggnewscale)
+library(gt)
+
+#this function rounds the latest year up to nearest half-decade
+#for the purpose of nice looking x-axes
+#for example, 2011 would round up to 2015
+round_5yrs <- function(x){
+        5*ceiling(as.numeric(x)/5)}
+
+#renaming NAs in lab name code and validator qualifier columns
+lake1$VALIDATOR_QUALIFIERS <- replace_na(lake1$VALIDATOR_QUALIFIERS, "none")
+lake1$LAB_NAME_CODE <- replace_na(lake1$LAB_NAME_CODE, "none")
+
+#removing rejected samples and only excluding data from labs other than UFI
+lake1 <- lake1 %>% 
+  filter(VALIDATOR_QUALIFIERS != "R") %>% 
+  filter(LAB_NAME_CODE == "none" | LAB_NAME_CODE == "UFI")
+
+dp<-data %>% 
+  filter(INFO_TYPE == "DP")
+
+```
+
+```{r header, echo=FALSE, results='asis', message=FALSE, warning=FALSE}
+template1 <- "Lake Name: %s\n
+Lake acreage: %s \n
+County: %s \n
+PWLID: %s\n
+Waterbody Classification: %s\n
+Coordinates: %s,%s \n
+Is this waterbody a public water supply: %s\n
+Are there DOH desingated beaches on this waterbody: %s\n
+\n 
+\n"
+laketemp<-unique(lake1[c('LAKE_ID','WATER','ACRES','County','PWLID','Waterbody_Classification','Y_Coordinate','X_Coordinate','PWS','Beaches')])
+laketemp<-laketemp %>% 
+  arrange(PWLID,Waterbody_Classification,X_Coordinate,Y_Coordinate,County,ACRES) %>% 
+  distinct(LAKE_ID,.keep_all=TRUE,.na.rm = TRUE)
+cat(sprintf(template1,laketemp$WATER[1],laketemp$ACRES[1],laketemp$County[1],laketemp$PWLID[1],laketemp$Waterbody_Classification[1],laketemp$Y_Coordinate[1],laketemp$X_Coordinate[1],laketemp$PWS[1],laketemp$Beaches[1]))
+rm(template1)
+
+cat(' \n\n ')
+```
+```{r, child= 'season_results_tables_markdown.Rmd'}
+```
+
+```{r, child= 'figureS_markdown.Rmd'}
+```
