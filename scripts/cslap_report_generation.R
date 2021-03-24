@@ -8,6 +8,7 @@ library(dplyr)
 library(rmarkdown)
 library(tidyr)
 
+#test
 ###Read in data
 setwd("C:/Users/amtweitm/OneDrive - New York State Office of Information Technology Services/Documents/R/Current")
 lake<-read.csv("from.other.files/lake.csv",na.strings=c("","NA"), stringsAsFactors=FALSE)
