@@ -7,6 +7,9 @@
 library(dplyr)
 library(rmarkdown)
 library(tidyr)
+library(purrr)
+library(remotes)
+library(ggpattern)
 
 #test
 ###Read in data
@@ -86,4 +89,6 @@ for(i in 1:nlakes){
                     output_file =  paste("report_", titles,"(",ids,")", ".html", sep=''), 
                     output_dir = 'reports/')
 }
+
+
 

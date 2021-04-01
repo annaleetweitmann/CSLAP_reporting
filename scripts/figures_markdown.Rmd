@@ -237,12 +237,12 @@ secchi_longterm <- secchi_longterm %>%
 secchi_longterm <- secchi_longterm %>% 
   group_by(year) %>%
   summarize(avg_clarity = mean(avg_clarity_s)) %>% 
-  mutate(image = "C:/Users/amtweitm/OneDrive - New York State Office of Information Technology Services/Documents/R/CSLAP_reports/images/sec.png")
+  mutate(image = "C:/Users/amtweitm/OneDrive - New York State Office of Information Technology Services/Documents/R/CSLAP_reporting/images/sec.png")
 
 #removing NAs
 secchi_longterm <- na.omit(secchi_longterm)
 
-#creating variable for adjusting y axis based on max secchi
+#creating variable  adjusting y axis based on max secchi
 yaxis <- max(max(secchi_longterm$avg_clarity), 7)
 yaxis <- round(yaxis)
 
@@ -914,7 +914,7 @@ ggplot(data=percep_longterm) +
 #adding year day column
 secchi_season <- lake1 %>% 
   filter(Characteristic.Name == "DEPTH, SECCHI DISK DEPTH") %>% 
-  mutate(image = "C:/Users/amtweitm/OneDrive - New York State Office of Information Technology Services/Documents/R/CSLAP_reports/images/sec.png") %>% 
+  mutate(image = "C:/Users/amtweitm/OneDrive - New York State Office of Information Technology Services/Documents/R/CSLAP_reporting/images/sec.png") %>% 
     mutate(year_day = yday(SAMPLE_DATE))
 
 
