@@ -30,7 +30,6 @@ output: html_document
 ###make graph
 
 
-
 this_season_long <- lake1 %>% 
 filter(year == report_year) %>% 
   distinct(SAMPLE_ID, INFO_TYPE, Characteristic.Name, Result.Sample.Fraction, Result.Value, .keep_all = TRUE) %>% 
@@ -235,19 +234,19 @@ for (i in 1:(nrow(z_score_df))) {
     z_score_df$diff[i] <- ""
   }
   else if(z_score_df$z_score[i] < 1 & z_score_df$z_score[i] > -1){
-    z_score_df$diff[i] <- "/images/no.png"
+    z_score_df$diff[i] <- "no"
   }
   else if(z_score_df$z_score[i] >= 1 & z_score_df$z_score[i] < 2){
-    z_score_df$diff[i] <- "/images/one_up_arrow.png"
+    z_score_df$diff[i] <- "one_up_arrow"
   }
   else if(z_score_df$z_score[i] >= 2){
-    z_score_df$diff[i] <- "/images/two_up_arrow.png"
+    z_score_df$diff[i] <- "two_up_arrow"
   }
   else if(z_score_df$z_score[i] <= -1 & z_score_df$z_score[i] > -2){
-    z_score_df$diff[i] <- "/images/one_down_arrow.png"
+    z_score_df$diff[i] <- "one_down_arrow"
   }
   else if(z_score_df$z_score[i] >= -2){
-    z_score_df$diff[i] <- "/images/two_down_arrow.png"
+    z_score_df$diff[i] <- "two_down_arrow"
   }
 }
 
@@ -255,26 +254,11 @@ for (i in 1:(nrow(z_score_df))) {
 
 
 
-##for(i in seq_along(owi_table$open)) {
-  # gtobj <- gtobj %>%
-       #  tab_style(style = cell_fill(color = ht_values[i]),
-               #    locations = cells_body(columns = "open", rows = i))
-#}
 
-
-
-#tab_style(
-#    style = list(
-#      cell_fill(color = "#D9654B")
-#    ),
-#    locations = cells_body(
-#      columns = "Clarity (m)" >= "5")
-#  )
 
 ###Include characteristic name in data, infotype, and result fraction as columns and then hide them
 ###easiest to merge with other dfs for averages, plots, etv
 
-###Creating df with FULL CHARACTERISTIC NAME and SEASONAL CHANGE PLOT
 
 
 if(nrow(this_season_long)!= 0){
@@ -295,11 +279,39 @@ plot_tble <- this_season_long_fulldate %>%
     data = NULL
   ) 
 
-#combining plot df and wide df by full char name
+
+FULL_CHARACTERISTIC_NAME <- c("DEPTH, SECCHI DISK DEPTH SD None",
+                                         "PHOSPHORUS OW T",
+                                         "PHOSPHORUS OW D", 
+                                         "PHOSPHORUS BS T",
+                                         "PHOSPHORUS BS D",
+                                         "NITROGEN, TOTAL OW T",
+                                         "NITROGEN, TOTAL DISSOLVED OW D",
+                                         "TN:TP",
+                                         "AMMONIA OW T",
+                                         "AMMONIA BS T",
+                                         "CHLOROPHYLL A OW T",
+                                         "PH OW None",
+                                         "SPECIFIC CONDUCTANCE OW None",
+                                         "CALCIUM OW T",
+                                         "CALCIUM BS T",
+                                         "CHLORIDE OW T",
+                                         "CHLORIDE BS T",
+                                         "TEMPERATURE, WATER OW None",
+                                         "TEMPERATURE, WATER BS None",
+                                         "CHLOROPHYLL A (PROBE RELATIVE FLUORESCENCE) OW None"
+                                         )
+list <- data.frame(FULL_CHARACTERISTIC_NAME)
+
+#adding column for graphs
 owi_withplots1 <- left_join(owi_table, plot_tble)  
 
-owi_withplots <- left_join(owi_withplots1, z_score_df) %>% 
+#adding columns for zscore 
+owi_withplots2 <- left_join(owi_withplots1, z_score_df) %>% 
   ungroup()
+
+#reordering 
+owi_withplots <- inner_join(list, owi_withplots2)
 
 owi_withplots[list_of_dates] <- sapply(owi_withplots[list_of_dates],as.character)
 owi_withplots$Season_Avg <- as.character(owi_withplots$Season_Avg)
@@ -307,16 +319,16 @@ owi_withplots$Season_Avg <- as.character(owi_withplots$Season_Avg)
 for(i in 1:nrow(owi_withplots)){
   if(owi_withplots$FULL_CHARACTERISTIC_NAME[i] %in% c("TEMPERATURE, WATER BS None", 
                                                       "TEMPERATURE, WATER OW None", "TN:TP", "CHLORIDE OW T", 
-                                                      "CHLORIDE BS T", "CALCIUM OW T", "CALCIUM BS T", "SPECIFIC 
-                                                      CONDUCTANCE OW None")){
+                                                      "CHLORIDE BS T", "CALCIUM OW T", "CALCIUM BS T", 
+                                                      "SPECIFIC CONDUCTANCE OW None")){
     owi_withplots$Season_Avg[i] <- as.character(round(as.numeric(owi_withplots$Season_Avg[i]), digits=0))
     for(j in 1:length(list_of_dates)){
       owi_withplots[i,j+1] <- as.character(round(as.numeric(owi_withplots[i,j+1]), digits=0))
     }
   }
    else if(owi_withplots$FULL_CHARACTERISTIC_NAME[i] %in% c("DEPTH, SECCHI DISK DEPTH SD None", "CHLOROPHYLL A OW T",
-                                                            "PH OW None", "CHLOROPHYLL A (PROBE RELATIVE 
-                                                            FLUORESCENCE) OW None" )){
+                                                            "PH OW None", 
+                                                            "CHLOROPHYLL A (PROBE RELATIVE FLUORESCENCE) OW None" )){
     owi_withplots$Season_Avg[i] <- as.character(round(as.numeric(owi_withplots$Season_Avg[i]), digits=1))
     for(j in 1:length(list_of_dates)){
       owi_withplots[i,j+1] <- as.character(round(as.numeric(owi_withplots[i,j+1]), digits=1))
@@ -333,6 +345,24 @@ for(i in 1:nrow(owi_withplots)){
    }
   else{}
 }
+
+##for(i in seq_along(owi_table$open)) {
+  # gtobj <- gtobj %>%
+       #  tab_style(style = cell_fill(color = ht_values[i]),
+               #    locations = cells_body(columns = "open", rows = i))
+#}
+
+
+
+#tab_style(
+#    style = list(
+#      cell_fill(color = "#D9654B")
+#    ),
+#    locations = cells_body(
+#      columns = "Clarity (m)" >= "5")
+#  )
+
+
 
 
 
@@ -356,7 +386,56 @@ make_table <- owi_withplots %>%
   cols_align(align="center", columns = vars(list_of_dates)) %>% 
   cols_align(align="center", columns = vars(seasonal.change)) %>% 
   cols_align(columns=vars(DISPLAY_NAME), align="left") %>% 
-  tab_options(column_labels.background.color = "grey") 
+  tab_options(column_labels.background.color = "grey") %>% 
+   text_transform(
+    locations = cells_body(vars(diff)),
+    fn = function(x) {
+      # loop over the elements of the column
+      map_chr(x, ~ local_image(
+        filename = paste0(.x, ".png"),
+        height = 100
+      ))
+    })
+
+#color coding clarity, chlor and phos
+
+for(i in 1:nrow(owi_withplots)) {
+  if(owi_withplots$FULL_CHARACTERISTIC_NAME[i] == "DEPTH, SECCHI DISK DEPTH SD None"){
+    for(j in 1:length(list_of_dates)){
+      if(is.na(owi_withplots[i,j+1])){}
+      else if(as.numeric(owi_withplots[i,j+1]) <= 2){
+        make_table <- make_table %>%
+          tab_style(style = cell_fill(color = "red"),
+                   locations = cells_body(columns = j+1, rows = i))
+      }
+      else{}
+      }
+  }
+  else if(owi_withplots$FULL_CHARACTERISTIC_NAME[i] == "CHLOROPHYLL A OW T"){
+    for(j in 1:length(list_of_dates)){
+      if(is.na(owi_withplots[i,j+1])){}
+      else if(as.numeric(owi_withplots[i,j+1]) >= 8){
+        make_table <- make_table %>%
+          tab_style(style = cell_fill(color = "red"),
+                   locations = cells_body(columns = j+1, rows = i))
+      }
+      else{}
+      }
+  }
+  else if(owi_withplots$FULL_CHARACTERISTIC_NAME[i] == "CHLOROPHYLL A OW T"){
+    for(j in 1:length(list_of_dates)){
+      if(is.na(owi_withplots[i,j+1])){}
+      else if(as.numeric(owi_withplots[i,j+1]) >= 8){
+        make_table <- make_table %>%
+          tab_style(style = cell_fill(color = "red"),
+                   locations = cells_body(columns = j+1, rows = i))
+      }
+      else{}
+      }
+  }
+  else{}
+}
+
 
 make_table
 }
