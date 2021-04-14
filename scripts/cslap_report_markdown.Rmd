@@ -53,8 +53,12 @@ rm(template1)
 
 cat(' \n\n ')
 ```
+
 ```{r, child= 'season_results_tables_markdown.Rmd'}
 ```
 
-```{r, child= 'figureS_markdown.Rmd'}
+```{r, child= 'habs_table_markdown.Rmd'}
+```
+
+```{r, child= 'figures_markdown.Rmd'}
 ```

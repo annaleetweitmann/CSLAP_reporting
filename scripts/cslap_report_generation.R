@@ -4,14 +4,18 @@
 ########################################################################
 
 ###Read in packages
+library(Hmisc)
 library(dplyr)
 library(rmarkdown)
 library(tidyr)
 library(purrr)
 library(remotes)
 library(ggpattern)
+library(EnvStats)
+library(stringr)
+library(varhandle)
 
-#test
+
 ###Read in data
 setwd("C:/Users/amtweitm/OneDrive - New York State Office of Information Technology Services/Documents/R/Current")
 lake<-read.csv("from.other.files/lake.csv",na.strings=c("","NA"), stringsAsFactors=FALSE)
@@ -86,7 +90,7 @@ for(i in 1:nlakes){
   titles<-lake1$WATER[1]
   ids<-lake1$LAKE_ID[1]
   rmarkdown::render('scripts/cslap_report_markdown.Rmd',
-                    output_file =  paste("report_", titles,"(",ids,")", ".html", sep=''), 
+                    output_file =  paste(report_year, "_", "report_", titles,"(",ids,")", ".html", sep=''), 
                     output_dir = 'reports/')
 }
 

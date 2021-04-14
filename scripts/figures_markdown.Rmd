@@ -1,10 +1,6 @@
 ---
 output: html_document
 ---
-
-
-## `r laketemp[1,2]` -- Sampling Season Results
-
 ### HABs Status
 #### Open Water Algae
 ```{r open-water-algae, echo=FALSE, message=FALSE, warning=FALSE}

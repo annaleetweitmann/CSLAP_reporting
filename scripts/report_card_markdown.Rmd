@@ -1,0 +1,306 @@
+---
+output: html_document
+---
+
+### `r laketemp[1,2]` – Lake Scorecard
+
+```{r report_card, echo=FALSE, message=FALSE, warning=FALSE}
+#creating blank scorecard
+water_quality_indicators <- c("Phosphorus", "Chlorophyll A", "Secchi","Aquatic Invasive Species", "Lake Perception", "Harmful Algal Blooms", "Open Water Algae Levels")
+average_year_grade <- c("0","0","0","0","0","0","0") 
+this_year_grade <- c("0","0","0","0","0","0","0") 
+
+scorecard <- data.frame(water_quality_indicators, average_year_grade, this_year_grade)
+
+#secchi, phos and chl a
+
+trophic_df <- lake1 %>% 
+    distinct(SAMPLE_ID, INFO_TYPE, Characteristic.Name, Result.Sample.Fraction, Result.Value, .keep_all = TRUE)
+
+trophic_df$Result.Sample.Fraction <- replace_na(trophic_df$Result.Sample.Fraction, "None")
+
+trophic_df <- trophic_df %>% 
+  mutate(FULL_CHARACTERISTIC_NAME = paste(Characteristic.Name, INFO_TYPE, Result.Sample.Fraction, sep=" ")) %>%
+  filter(FULL_CHARACTERISTIC_NAME %in% c("DEPTH, SECCHI DISK DEPTH SD None",
+                                         "PHOSPHORUS OW T",
+                                         "CHLOROPHYLL A OW T"
+                                         ))
+
+for(i in 1:nrow(trophic_df)){
+  if(trophic_df$SAMPLE_DATE[i] >= as.Date(paste(year(trophic_df$SAMPLE_DATE[i]), 07, 15, sep = "-")) & trophic_df$SAMPLE_DATE[i] <= as.Date(paste(year(trophic_df$SAMPLE_DATE[i]), 09, 15, sep = "-"))){
+    trophic_df$season[i] <- "productivity"
+  } else if(trophic_df$SAMPLE_DATE[i] >= as.Date(paste(year(trophic_df$SAMPLE_DATE[i]), 06, 1, sep = "-")) & trophic_df$SAMPLE_DATE[i] <= as.Date(paste(year(trophic_df$SAMPLE_DATE[i]), 07, 14, sep = "-"))){
+    trophic_df$season[i] <- "summer"
+  } else if(trophic_df$SAMPLE_DATE[i] >= as.Date(paste(year(trophic_df$SAMPLE_DATE[i]), 09, 15, sep = "-")) & trophic_df$SAMPLE_DATE[i] <= as.Date(paste(year(trophic_df$SAMPLE_DATE[i]), 10, 1, sep = "-"))){
+    trophic_df$season[i] <- "summer"
+  } else {
+   trophic_df$season[i] <- "not"
+  }
+}
+
+trophic_df$Result.Value <- as.numeric(trophic_df$Result.Value)
+
+trophic_df <- trophic_df %>% 
+  filter(season != "not") %>% 
+  group_by(FULL_CHARACTERISTIC_NAME, year, season) %>% 
+  dplyr::summarize(avg_result_s = mean(Result.Value)) %>% 
+  ungroup() %>% 
+  group_by(FULL_CHARACTERISTIC_NAME, year) %>%
+  dplyr::summarize(avg_result = mean(avg_result_s)) %>% 
+  na.omit()
+
+thisyear <-  trophic_df  %>% 
+  filter(year == report_year) %>% 
+  rename(this_year = avg_result)
+
+allyear  <-  trophic_df  %>% 
+  filter(year != report_year) %>% 
+  group_by(FULL_CHARACTERISTIC_NAME) %>% 
+  dplyr::summarize(Longterm_Avg = mean(avg_result))
+
+trophic_dt <- full_join(thisyear, allyear) %>% 
+  select(!year)
+
+for(i in 1:nrow(trophic_dt)){
+  if(trophic_dt$FULL_CHARACTERISTIC_NAME[i] == "PHOSPHORUS OW T"){
+    if(trophic_dt$this_year[i] > 20){
+      scorecard$this_year_grade[1] <- "Eutrophic"
+    } else if(trophic_dt$this_year[i] < 10){
+       scorecard$this_year_grade[1] <- "Oligotrophic"
+    } else {
+       scorecard$this_year_grade[1] <- "Mesotrophic"
+    }
+  }
+}
+
+for(i in 1:nrow(trophic_dt)){
+  if(trophic_dt$FULL_CHARACTERISTIC_NAME[i] == "PHOSPHORUS OW T"){
+    if(trophic_dt$Longterm_Avg[i] > 20){
+      scorecard$average_year_grade[1] <- "Eutrophic"
+    } else if(trophic_dt$Longterm_Avg[i] < 10){
+       scorecard$average_year_grade[1] <- "Oligotrophic"
+    } else {
+       scorecard$average_year_grade[1] <- "Mesotrophic"
+    }
+  }
+}
+
+for(i in 1:nrow(trophic_dt)){
+  if(trophic_dt$FULL_CHARACTERISTIC_NAME[i] == "CHLOROPHYLL A OW T"){
+    if(trophic_dt$this_year[i] > 8){
+      scorecard$this_year_grade[2] <- "Eutrophic"
+    } else if(trophic_dt$this_year[i] < 2){
+       scorecard$this_year_grade[2] <- "Oligotrophic"
+    } else {
+       scorecard$this_year_grade[2] <- "Mesotrophic"
+    }
+  }
+}
+
+for(i in 1:nrow(trophic_dt)){
+  if(trophic_dt$FULL_CHARACTERISTIC_NAME[i] == "CHLOROPHYLL A OW T"){
+    if(trophic_dt$Longterm_Avg[i] > 8){
+      scorecard$average_year_grade[2] <- "Eutrophic"
+    } else if(trophic_dt$Longterm_Avg[i] < 2){
+       scorecard$average_year_grade[2] <- "Oligotrophic"
+    } else {
+       scorecard$average_year_grade[2] <- "Mesotrophic"
+    }
+  }
+}
+
+for(i in 1:nrow(trophic_dt)){
+  if(trophic_dt$FULL_CHARACTERISTIC_NAME[i] == "DEPTH, SECCHI DISK DEPTH SD None"){
+    if(trophic_dt$this_year[i] > 5){
+      scorecard$this_year_grade[3] <- "Oligotrophic"
+    } else if(trophic_dt$this_year[i] < 2){
+       scorecard$this_year_grade[3] <- "Eutrophic"
+    } else {
+       scorecard$this_year_grade[3] <- "Mesotrophic"
+    }
+  }
+}
+
+for(i in 1:nrow(trophic_dt)){
+  if(trophic_dt$FULL_CHARACTERISTIC_NAME[i] == "DEPTH, SECCHI DISK DEPTH SD None"){
+    if(trophic_dt$Longterm_Avg[i] > 5){
+      scorecard$average_year_grade[3] <- "Oligotrophic"
+    } else if(trophic_dt$Longterm_Avg[i] < 2){
+       scorecard$average_year_grade[3] <- "Eutrophic"
+    } else {
+       scorecard$average_year_grade[3] <- "Mesotrophic"
+    }
+  }
+}
+
+###AIS
+
+###Lake Perception
+#Frequency of QA Algae levels >3: >50% “Poor”, >10% “Fair”, <10% “Good” OR
+#Frequency of QC Rec impacted >3: >50% “Poor”, >10% “Fair”, <10% “Good”
+
+lakepercep_counts <- lake1 %>% 
+  filter(Characteristic.Name == "QA" | Characteristic.Name == "QC") %>% 
+  group_by(year, Characteristic.Name) %>% 
+  dplyr::summarize(total_obs = n())
+
+lakepercep_bad <- lake1 %>% 
+  filter(Characteristic.Name == "QA" | Characteristic.Name == "QC") %>% 
+  filter(Result.Value > 3) %>% 
+  group_by(year, Characteristic.Name) %>% 
+  dplyr::summarize(bad_count = n())
+
+lake_percep <- left_join(lakepercep_counts, lakepercep_bad)
+
+lake_percep$bad_count <- replace_na(lake_percep$bad_count, 0) 
+
+lake_percep_thisyear <- lake_percep %>% 
+  mutate(freq_bad = bad_count/total_obs) %>% 
+  filter(year == report_year)
+
+lake_percep_alltime <- lake_percep %>% 
+  mutate(freq_bad = bad_count/total_obs) %>% 
+  filter(year != report_year) %>% 
+  group_by(Characteristic.Name) %>% 
+  dplyr::summarize(freq_bad = mean(freq_bad))
+
+if(max(lake_percep_thisyear$freq_bad) > 0.5){
+      scorecard$this_year_grade[5] <- "Poor"
+    } else if(max(lake_percep_thisyear$freq_bad) < 0.1){
+       scorecard$this_year_grade[5] <- "Good"
+    } else{
+       scorecard$this_year_grade[5] <- "Fair"
+    }
+
+if(max(lake_percep_alltime$freq_bad) > 0.5){
+      scorecard$average_year_grade[5] <- "Poor"
+    } else if(max(lake_percep_alltime$freq_bad) < 0.1){
+       scorecard$average_year_grade[5] <- "Good"
+    } else{
+       scorecard$average_year_grade[5] <- "Fair"
+    }
+
+
+###Harmful Algal Blooms
+#Counts of bloom sample toxins >20ug/L: >1 “Poor”, =1 “Fair”, <1 “Good” OR
+#Counts of bloom sample BGA >25ug/L: >1 “Poor”, =1 “Fair”, <1 “Good” OR
+#More than 1 HAB Notification (NYHABs): No notifications “Good”, default based on a) or b) to “Fair” or “Poor”
+
+nyhabs_df<-lake1 %>% 
+  filter(STATUS%in%c("CONFIRMED","CONFIRMED WITH HIGH TOXINS")) %>% 
+  group_by(year) %>% 
+  dplyr::summarize(num_year = n())
+
+nyhabs_thisyear <- nyhabs_df %>% 
+  filter(year == report_year)
+
+num_nyhabs_thisyear <- nyhabs_thisyear$num_year
+
+nyhabs_average <- nyhabs_df %>% 
+  filter(year != report_year)
+
+num_nyhabs_avg <- median(nyhabs_average$num_year)
+
+microcystin <- lake1 %>% 
+  filter(Characteristic.Name == "MICROCYSTIN") %>% 
+  filter(Result.Value != "ND") %>% 
+  filter(as.numeric(Result.Value) >= 20) %>% 
+  group_by(year) %>% 
+  dplyr::summarize(num_high_microcystin = n()) %>% 
+  filter(year <= report_year)
+
+count_microcystin_thisyear <- microcystin$num_high_microcystin[microcystin$year == report_year]
+
+microcystin_alltime <- microcystin %>% 
+  filter(year != report_year)
+
+past_microcystin <- microcystin_alltime$num_high_microcystin
+
+count_past_microcystin <- length(past_microcystin)
+
+max_year <- max(min(lake1$year), 2014)
+
+y <- as.numeric(report_year) - as.numeric(max_year) - count_past_microcystin
+
+missing_zeroes <- rep(0, times = y)
+
+vector_microcystin <- c(missing_zeroes, past_microcystin)
+
+microcystin_median <- median(vector_microcystin)
+
+###Openwater HABS
+#Frequency of OW extracted chlorophyll > 8ug/L: >50% “Poor”, >10% “Fair”, <10% “Good” OR 
+#Counts of OW fluoroprobe BGA >25ug/L: >1 “Poor”, =1 “Fair”, <1 “Good”
+
+extracted_chla_count <- lake1 %>% 
+  filter(Characteristic.Name == "CHLOROPHYLL A") %>% 
+  filter(INFO_TYPE == "OW") %>% 
+  group_by(year) %>% 
+  dplyr::summarise(count_all = n())
+
+extracted_chla_bad <- lake1 %>% 
+  filter(Characteristic.Name == "CHLOROPHYLL A") %>% 
+  filter(INFO_TYPE == "OW") %>% 
+  filter(Result.Value > 8) %>% 
+  group_by(year)%>% 
+  dplyr::summarise(count_bad = n())
+  
+extract_chla_freq <- left_join(extracted_chla_count, extracted_chla_bad) 
+
+extract_chla_freq$count_bad <- replace_na(extract_chla_freq$count_bad, 0) 
+ 
+extract_chla_freq_thisyear <- extract_chla_freq %>% 
+  mutate(freq = count_bad/count_all) %>% 
+  filter(year == report_year) 
+
+extract_chla_freq_thisyear <-extract_chla_freq_thisyear$freq
+
+extract_chla_freq_allyear <- extract_chla_freq %>% 
+  mutate(freq = count_bad/count_all) %>% 
+  filter(year < report_year)
+
+extract_chla_freq_allyear <-mean(extract_chla_freq_allyear$freq)
+
+#### format scorecard
+
+make_scorecard <- scorecard %>%
+  gt() %>% 
+  cols_label(water_quality_indicators = "Water Quality Indicators",
+             average_year_grade = "Average Year",
+             this_year_grade = report_year) %>% 
+  tab_style(
+    style = list(
+    cell_text(weight = "bold")),
+    locations = cells_column_labels(columns = everything())) %>% 
+    tab_style(style=cell_borders(sides="all", color = "black", style = "solid", weight = px(1)),
+              locations = cells_body(
+              columns = everything(),
+              rows = everything())
+    )
+
+
+for(i in 1:nrow(scorecard)){
+    
+  for(j in 1:2){
+      
+    if(scorecard[i,j+1] %in% c("Eutrophic", "Poor")){
+        make_scorecard <- make_scorecard %>%
+          tab_style(style = cell_fill(color = "red", alpha=0.5),
+                   locations = cells_body(columns = j+1, rows = i))
+      } else if (scorecard[i,j+1] %in% c("Mesotrophic", "Fair")){
+          make_scorecard <- make_scorecard %>%
+          tab_style(style = cell_fill(color = "yellow", alpha=0.5),
+                   locations = cells_body(columns = j+1, rows = i))
+      } else if (scorecard[i,j+1] %in% c("Oligotrophic", "Good")){
+          make_scorecard <- make_scorecard %>%
+          tab_style(style = cell_fill(color = "green", alpha=0.5),
+                   locations = cells_body(columns = j+1, rows = i))
+      }
+}
+}
+  
+
+
+make_scorecard
+```
+
