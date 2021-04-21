@@ -33,25 +33,7 @@ dp<-data %>%
 
 ```
 
-```{r header, echo=FALSE, results='asis', message=FALSE, warning=FALSE}
-template1 <- "Lake Name: %s\n
-Lake acreage: %s \n
-County: %s \n
-PWLID: %s\n
-Waterbody Classification: %s\n
-Coordinates: %s,%s \n
-Is this waterbody a public water supply: %s\n
-Are there DOH desingated beaches on this waterbody: %s\n
-\n 
-\n"
-laketemp<-unique(lake1[c('LAKE_ID','WATER','ACRES','County','PWLID','Waterbody_Classification','Y_Coordinate','X_Coordinate','PWS','Beaches')])
-laketemp<-laketemp %>% 
-  arrange(PWLID,Waterbody_Classification,X_Coordinate,Y_Coordinate,County,ACRES) %>% 
-  distinct(LAKE_ID,.keep_all=TRUE,.na.rm = TRUE)
-cat(sprintf(template1,laketemp$WATER[1],laketemp$ACRES[1],laketemp$County[1],laketemp$PWLID[1],laketemp$Waterbody_Classification[1],laketemp$Y_Coordinate[1],laketemp$X_Coordinate[1],laketemp$PWS[1],laketemp$Beaches[1]))
-rm(template1)
-
-cat(' \n\n ')
+```{r, child= 'header_markdown.Rmd'}
 ```
 
 ```{r, child= 'season_results_tables_markdown.Rmd'}
@@ -61,4 +43,7 @@ cat(' \n\n ')
 ```
 
 ```{r, child= 'figures_markdown.Rmd'}
+```
+
+```{r, child= 'report_card_markdown.Rmd'}
 ```

@@ -1,0 +1,98 @@
+---
+output: html_document
+---
+
+```{r header-creation, echo=FALSE, message=FALSE, warning=FALSE}
+
+watershed_info <- read.csv(file = "C:/Users/amtweitm/OneDrive - New York State Office of Information Technology Services/Documents/R/CSLAP_reporting/data/watershed_info.csv") %>% 
+  filter(Lake_ID == ids)
+lake_info <- read.csv(file = "C:/Users/amtweitm/OneDrive - New York State Office of Information Technology Services/Documents/R/CSLAP_reporting/data/lake_info.csv") %>% 
+  filter(LakeID == ids)
+
+lake_watershed_info <- full_join(watershed_info, lake_info, by = c("Lake_ID" = "LakeID"))
+
+
+if(nrow(lake_watershed_info)>0){
+table_1 <- lake_watershed_info %>% 
+  select(LakeName, Lake.Assn.Name, Town, County) %>% 
+  mutate(Full_Town = paste("Town(s) of", Town, sep=" ")) %>% 
+  mutate(Full_County = paste(County, "County", sep = " ")) %>% 
+  gt() %>% 
+    cols_width(
+    "LakeName" ~ px(300),
+    "Full_Town" ~ px(200),
+    "Full_County" ~ px(200),
+    "Lake.Assn.Name" ~ px(200)
+  ) %>% 
+  cols_hide(
+    columns = c(
+      "Town", "County"
+    ) 
+  ) %>% 
+    tab_options(
+    column_labels.hidden = TRUE) %>% 
+    tab_style(
+    style = cell_text(size = pct(250)),
+    locations = cells_body(columns = 1, rows = 1))
+
+
+table_1
+}
+
+
+
+
+```
+
+```{r, echo=FALSE, out.width=px(275)}
+image_names <- list.files("C:/Users/amtweitm/OneDrive - New York State Office of Information Technology Services/Documents/R/CSLAP_reporting/images/watershed_images")
+
+lake_image <- str_subset(image_names, ids)
+
+if(length(lake_image) == 0){
+  lake_image <- "none.png"
+}
+
+full_lake_image <- paste("C:/Users/amtweitm/OneDrive - New York State Office of Information Technology Services/Documents/R/CSLAP_reporting/images/watershed_images/", lake_image, sep = "")
+
+image_code <- knitr::include_graphics(full_lake_image)
+
+image_code
+
+
+chars <- c("Surface Area (ac/ha)", "Max Depth (ft/m)", "Mean Depth (ft/m)", "Retention Time (years)", "Lake Classification", "Dam Classification", "Watershed area (ac/ha)", "Watershed/Lake Ratio", "Lake and Wetlands %", "Agricultural %", "Forest, Shrub, Grasses %", "Residential %", "Urban %", "Years in CSLAP", "Volunteers")
+values <- c("0", "0","0","0","0","0","0","0","0","0","0","0","0","0","0")
+
+characteristic_df <- data.frame(chars, values)
+
+characteristic_df$values[1] <- paste(lake_watershed_info$Area..ac.[1],"/",lake_watershed_info$Area..ha.[1], sep="")
+characteristic_df$values[2] <- paste(lake_watershed_info$Zmax..ft.[1],"/", lake_watershed_info$Zmax..m.[1], sep="")
+characteristic_df$values[3] <- paste(lake_watershed_info$Zmean..ft.[1],"/", lake_watershed_info$Zmean..m.[1], sep="")
+characteristic_df$values[4] <- lake_watershed_info$Residence[1]
+characteristic_df$values[5] <- lake_watershed_info$Class[1]
+characteristic_df$values[6] <- lake_watershed_info$DamClass[1]
+characteristic_df$values[7] <- paste(lake_watershed_info$WshedArea..ac.[1], "/", lake_watershed_info$WshedArea..ha.[1], sep="")
+characteristic_df$values[8] <- (lake_watershed_info$WshedArea..ac.[1]/lake_watershed_info$Area..ac.[1])
+characteristic_df$values[9] <- lake_watershed_info$Lake.Watershed[1]
+characteristic_df$values[10] <- lake_watershed_info$Agriculture[1]
+characteristic_df$values[11] <- lake_watershed_info$Forest[1]
+characteristic_df$values[12] <- lake_watershed_info$Residential[1]
+characteristic_df$values[13] <- lake_watershed_info$Urban[1]
+characteristic_df$values[14] <- lake_watershed_info$Sampling.Years[1]
+###make this a variable so it doesn't have to be changed every year
+characteristic_df$values[15] <- lake_watershed_info$X18.Samplers
+
+make_char_table <- characteristic_df %>% 
+  gt() %>% 
+   tab_options(
+    column_labels.hidden = TRUE) %>% 
+    tab_row_group("CSLAP Participation", rows = 14:15) %>% 
+    tab_row_group("Watershed Characteristics", rows = 7:13) %>% 
+  tab_row_group("Lake Characteristics", rows = 1:6) 
+
+
+
+make_char_table 
+
+
+```

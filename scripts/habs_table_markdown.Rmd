@@ -8,7 +8,7 @@ listing_df<-lake1 %>%
   filter(year == report_year) %>% 
   filter(STATUS%in%c("CONFIRMED","CONFIRMED WITH HIGH TOXINS")) %>% 
   mutate(STATUS_CODE=as.factor(STATUS)) %>% 
-  mutate(STATUS_CODE=recode(STATUS_CODE,"NO BLOOM"=0,"SUSPICIOUS"=1,"CONFIRMED"=2,"CONFIRMED WITH HIGH TOXINS"=3)) %>% 
+  mutate(STATUS_CODE=recode(STATUS_CODE,"NO BLOOM"=0,"SUSPICIOUS"=1,"CONFIRMED"=2,"CONFIRMED WITH HIGH TOXINS"=3)) %>%
   mutate(STATUS_CODE=as.numeric(STATUS_CODE)) %>% 
   dplyr::summarise(Date_First_Listing=min(SAMPLE_DATE),
             Date_Last_Listing=max(SAMPLE_DATE),
@@ -120,9 +120,45 @@ make_habs_sample_table <- sb_table %>%
   cols_hide(columns = vars(Characteristic.Name)) %>% 
   cols_move_to_start(vars(Display_Name))
 
-if(ncol(sb_table) > 3){
-make_habs_sample_table 
-} 
+
+if(length(list_of_dates) > 0){
+  
+for(i in 1:nrow(sb_table)) {
+  
+  if(sb_table$Characteristic.Name[i] == "CHLOROPHYLL A (PROBE) CONCENTRATION, CYANOBACTERIA (BLUEGREEN)"){
+    
+    for(j in 1:length(list_of_dates)){
+      if(is.na(sb_table[i,j+2])){}
+      else if(sb_table[i,j+2] == "ND"){}
+      else if(as.numeric(sb_table[i,j+2]) > 25){
+        make_habs_sample_table <- make_habs_sample_table %>%
+          tab_style(style = cell_fill(color = "red", alpha = 0.5),
+                   locations = cells_body(columns = j+2, rows = i))
+      }
+      
+      else{}
+      
+      }
+  }
+  else if(sb_table$Characteristic.Name[i] == "MICROCYSTIN"){
+    for(j in 1:length(list_of_dates)){
+     if(is.na(sb_table[i,j+2])){}
+      else if(sb_table[i,j+2] == "ND"){}
+      else if(as.numeric(sb_table[i,j+2]) > 20){
+         make_habs_sample_table <- make_habs_sample_table %>%
+          tab_style(style = cell_fill(color = "red", alpha = 0.5),
+                   locations = cells_body(columns = j+2, rows = i))
+      }
+      else{}
+      }
+  }
+  else{}
+}
+  
+make_habs_sample_table
+}
+
+
 
 
 ```

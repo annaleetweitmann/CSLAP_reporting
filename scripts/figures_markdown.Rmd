@@ -190,7 +190,7 @@ for(i in 1:nparams){
 
 ```
 
-## `r laketemp[1,2]` Long-Term Trend Analysis
+## `r titles[1]` Long-Term Trend Analysis
 
 #### Clarity
 ```{r secchi, echo=FALSE, message=FALSE, warning=FALSE}
@@ -900,7 +900,7 @@ ggplot(data=percep_longterm) +
 
 ```
 
-## `r laketemp[1,2]` - In-Season Analysis
+## `r titles[1]` - In-Season Analysis
 
 #### In Season Water Clarity
 

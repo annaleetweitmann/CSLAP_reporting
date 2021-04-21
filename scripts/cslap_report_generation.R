@@ -14,7 +14,8 @@ library(ggpattern)
 library(EnvStats)
 library(stringr)
 library(varhandle)
-
+library(grid)
+library(gridExtra)
 
 ###Read in data
 setwd("C:/Users/amtweitm/OneDrive - New York State Office of Information Technology Services/Documents/R/Current")
