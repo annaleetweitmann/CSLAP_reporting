@@ -4,41 +4,9 @@ output: html_document
 
 ## `r titles[1]` -- `r report_year[1]` Sampling Season Results
 
+"Seasonal change" shows current year variability. Light red color indicates eutrophic conditions in top table and bloom conditions in bottom table. Summer averages for each of the CSLAP years and long term trend analyses show trends in key water quality indicators over a consistent index period (mid-June thru mid-September).
+
 ```{r in-season-table, echo=FALSE, message=FALSE, warning=FALSE}
-
-###
-###rows of dt composed of pure data and calculated data (tn:tp, nh4 ratio)
-###columns: by date, average of this year, average of other years, stats
-
-###reg data by month
-###calc data by month
-
-#calculated_data <- lake1 %>% 
-  #filter(Characteristic.Name %in% c("NITROGEN, TOTAL", "PHOSPHORUS, TOTAL", "AMMONIA"))
-
-#reg_data <- lake1 %>% 
-  #distinct(SAMPLE_ID, INFO_TYPE, Characteristic.Name, Result.Sample.Fraction, Result.Value, .keep_all = TRUE) %>% 
-  #group_by(SAMPLE_DATE, Characteristic.Name, Result.Sample.Fraction, INFO_TYPE) %>% 
-  #summarize(RESULT_VALUE = mean(as.numeric(Result.Value))) %>% 
-  #ungroup()
-
-
-
-###reg data summary cols
-###calc data summary cols
-
-###add plots
-
-###make graph
-
-# report_year <- as.numeric("2018")
-# lake1 <- lake
-# lake1$year <- as.numeric(lake1$year)
-# lake1$VALIDATOR_QUALIFIERS <- replace_na(lake1$VALIDATOR_QUALIFIERS, "none")
-# lake1$LAB_NAME_CODE <- replace_na(lake1$LAB_NAME_CODE, "none")
-# lake1 <- lake1 %>% 
-#   filter(VALIDATOR_QUALIFIERS != "R") %>% 
-#   filter(LAB_NAME_CODE == "none" | LAB_NAME_CODE == "UFI")
 
 this_season_long <- lake1 %>% 
 filter(year == report_year) %>% 
@@ -321,71 +289,6 @@ all_summary <- full_join(normchar_summary, longterm_summary)
 
 
 
-#calculating stats
-####ignoring ths for now
-#longterm_avg_df <- lake1 %>% 
-  #distinct(SAMPLE_ID, INFO_TYPE, Characteristic.Name, Result.Sample.Fraction, Result.Value, .keep_all = TRUE) 
-
-#longterm_avg_df$Result.Sample.Fraction <- replace_na(longterm_avg_df$Result.Sample.Fraction, "None")
-
-#longterm_avg_df <- longterm_avg_df %>% 
-  #mutate(FULL_CHARACTERISTIC_NAME = paste(Characteristic.Name, INFO_TYPE, Result.Sample.Fraction, sep=" ")) %>% 
-  #filter(FULL_CHARACTERISTIC_NAME %in% c("DEPTH, SECCHI DISK DEPTH SD None",
-                                         #"PHOSPHORUS OW T",
-                                         #"PHOSPHORUS OW D", 
-                                         #"PHOSPHORUS BS T",
-                                         #"PHOSPHORUS BS D",
-                                         #"NITROGEN, TOTAL OW T",
-                                         #"NITROGEN, TOTAL DISSOLVED OW D",
-                                         #"TN:TP",
-                                         #"AMMONIA OW T",
-                                         #"AMMONIA BS T",
-                                         #"CHLOROPHYLL A OW T",
-                                         #"PH OW None",
-                                         #"SPECIFIC CONDUCTANCE OW None",
-                                         #"CALCIUM OW T",
-                                         #"CALCIUM BS T",
-                                         #"CHLORIDE OW T",
-                                         #"CHLORIDE BS T",
-                                         #"TEMPERATURE, WATER OW None",
-                                         #"TEMPERATURE, WATER BS None",
-                                         #"CHLOROPHYLL A (PROBE RELATIVE FLUORESCENCE) OW None"
-                                         #)) %>% 
-  #filter(year != report_year & Result.Value != "NA") %>% 
-  #group_by(FULL_CHARACTERISTIC_NAME) %>% 
-  #summarize(longterm_avg = mean(as.numeric(Result.Value)), std_dev = sd(as.numeric(Result.Value)), samp_size = n()) 
-
-#z_score_df <- full_join(longterm_avg_df, seasonal_avgs_all, by = "FULL_CHARACTERISTIC_NAME") %>% 
-  #mutate(z_score = (Season_Avg - longterm_avg)/std_dev)
-
-#z_score_df$diff <- 0
-
-#for (i in 1:(nrow(z_score_df))) {
-  #if(is.na(z_score_df$z_score[i])){
-    #z_score_df$diff[i] <- "C:/Users/amtweitm/OneDrive - New York State Office of Information Technology Services/Documents/R/CSLAP_reporting/images/blank.png"
-  #}
-  #else if(z_score_df$z_score[i] < 1 & z_score_df$z_score[i] > -1){
-   # z_score_df$diff[i] <- "C:/Users/amtweitm/OneDrive - New York State Office of Information Technology #Services/Documents/R/CSLAP_reporting/images/no.png"
-  #}
- # else if(z_score_df$z_score[i] >= 1 & z_score_df$z_score[i] < 2){
-   # z_score_df$diff[i] <- "C:/Users/amtweitm/OneDrive - New York State Office of Information Technology Services/Documents/R/CSLAP_reporting/images/one_up_arrow.png"
- # }
-#  else if(z_score_df$z_score[i] >= 2){
-   # z_score_df$diff[i] <- "C:/Users/amtweitm/OneDrive - New York State Office of Information Technology Services/Documents/R/CSLAP_reporting/images/two_up_arrow.png"
- # }
- # else if(z_score_df$z_score[i] <= -1 & z_score_df$z_score[i] > -2){
- #   z_score_df$diff[i] <- "C:/Users/amtweitm/OneDrive - New York State Office of Information Technology Services/Documents/R/CSLAP_reporting/images/one_down_arrow.png"
-#  }
-#  else if(z_score_df$z_score[i] >= -2){
-#    z_score_df$diff[i] <- "C:/Users/amtweitm/OneDrive - New York State Office of Information Technology Services/Documents/R/CSLAP_reporting/images/two_down_arrow.png"
-#  }
-#}
-
-
-
-
-
-
 
 ###Include characteristic name in data, infotype, and result fraction as columns and then hide them
 ###easiest to merge with other dfs for averages, plots, etv
@@ -658,7 +561,8 @@ make_table <- owi_withplots %>%
   fn = function(x) {
     lapply(x, local_image)
     }
-  )
+  ) %>% 
+  tab_options(table.font.size = px(14))
 
 #color coding clarity, chlor and phos
 
@@ -707,5 +611,3 @@ make_table
 
 
 ```
-
-

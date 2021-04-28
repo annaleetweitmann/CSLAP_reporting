@@ -1,8 +1,11 @@
 ---
 output: html_document
+editor_options: 
+  markdown: 
+    wrap: 72
 ---
 
-### `r titles[1]` – Lake Scorecard
+### `r titles[1]` -- Lake Scorecard
 
 ```{r report_card, echo=FALSE, message=FALSE, warning=FALSE}
 #creating blank scorecard
@@ -42,12 +45,12 @@ trophic_df$Result.Value <- as.numeric(trophic_df$Result.Value)
 
 trophic_df <- trophic_df %>% 
   filter(season != "not") %>% 
+   filter(!is.na(Result.Value)) %>% 
   group_by(FULL_CHARACTERISTIC_NAME, year, season) %>% 
   dplyr::summarize(avg_result_s = mean(Result.Value)) %>% 
   ungroup() %>% 
   group_by(FULL_CHARACTERISTIC_NAME, year) %>%
-  dplyr::summarize(avg_result = mean(avg_result_s)) %>% 
-  na.omit()
+  dplyr::summarize(avg_result = mean(avg_result_s))
 
 thisyear <-  trophic_df  %>% 
   filter(year == report_year) %>% 
@@ -65,9 +68,9 @@ for(i in 1:nrow(trophic_dt)){
   if(trophic_dt$FULL_CHARACTERISTIC_NAME[i] == "PHOSPHORUS OW T"){
     if(is.na(trophic_dt$this_year[i])){
       scorecard$this_year_grade[1] <- ""}
-    else if(trophic_dt$this_year[i] > 20){
+    else if(trophic_dt$this_year[i] > 0.02){
       scorecard$this_year_grade[1] <- "Eutrophic"
-    } else if(trophic_dt$this_year[i] < 10){
+    } else if(trophic_dt$this_year[i] < 0.010){
        scorecard$this_year_grade[1] <- "Oligotrophic"
     } else if(trophic_dt$this_year[i] == 0) {
       score_card$this_year_grade[1] <- ""
@@ -83,9 +86,9 @@ for(i in 1:nrow(trophic_dt)){
       scorecard$average_year_grade[1] <- ""
     } else if(trophic_dt$Longterm_Avg[i] == 0){
       scorecard$average_year_grade[1] <- ""
-    } else if(trophic_dt$Longterm_Avg[i] > 20){
+    } else if(trophic_dt$Longterm_Avg[i] > 0.020){
       scorecard$average_year_grade[1] <- "Eutrophic"
-    } else if(trophic_dt$Longterm_Avg[i] < 10){
+    } else if(trophic_dt$Longterm_Avg[i] < 0.010){
        scorecard$average_year_grade[1] <- "Oligotrophic"
     } else {
        scorecard$average_year_grade[1] <- "Mesotrophic"
@@ -499,4 +502,46 @@ make_inv_scorecard
 
 ```
 
+# Water Quality Assessments 
 
+The Waterbody Inventory/Priority Waterbodies List (WI/PWL) is a
+statewide inventory of New York's water resources that is used to track
+a waters ability to support its' best use(s), identify pollutant(s)
+causing impairment of best use(s), and follow the status of restoration,
+protection and other water quality activities and efforts. Data
+collected through CSLAP contributes to the WI/PWL. In order to be
+included as an assessment unit in the WI/PWL, a lake, pond, or reservoir
+must be at least 6.4 acres in size. To view current water quality
+assessment results:
+
+-   Visit <https://www.dec.ny.gov/pubs/109457.html> - follow the link to
+    launch the DECinfo Locator
+
+-   Search for waterbody name, address or nearby landmark in the search
+    tool at the top of the left banner
+
+-   Click and Expand the 'DEC Information Layers' tab of the left banner
+    o Click and expand the 'Environmental Monitoring' tab of the left
+    banner
+
+-   Check the 'Lakes and Reservoirs' layer
+
+-   Click on the waterbody of interest in the map view to display a
+    pop-up with more information about the waterbody
+
+-   Follow the 'Fact Sheet' link in the pop-up to learn more about the
+    current use assessment of the waterbody
+
+# Lake Stewardship Actions 
+
+Individual stewardship activities can help improve water quality:
+maintain your septic system, reduce fertilizer use, grow a buffer of
+native plants next to the lake shore, and reduce shoreline erosion and
+runoff into the lake. Visiting boats should be inspected to prevent the
+spread of invasive species, and continued community education about and
+monitoring for invasive species is recommended. Routine education about
+algae and harmful algal blooms (HABs) within your lake community is
+recommended; to learn more about HABs and see examples of HABs visit
+<http://www.dec.ny.gov/chemical/81962.html>. Occurrences of HABs can be
+reported to NYSDEC. For more information on keeping New York waters
+clean, visit <http://www.dec.ny.gov/public/43661.html>.

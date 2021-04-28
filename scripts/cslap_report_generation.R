@@ -16,6 +16,11 @@ library(stringr)
 library(varhandle)
 library(grid)
 library(gridExtra)
+library(webshot)
+library(kableExtra)
+library(magick)
+library(lubridate)
+library(BBmisc)
 
 ###Read in data
 setwd("C:/Users/amtweitm/OneDrive - New York State Office of Information Technology Services/Documents/R/Current")

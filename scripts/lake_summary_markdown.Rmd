@@ -1,0 +1,583 @@
+---
+output: html_document
+editor_options: 
+  markdown: 
+    wrap: sentence
+---
+
+# `r titles[1]` -- `r report_year[1]` Lake Summary
+
+```{r condition_summary, echo=FALSE, message=FALSE, warning=FALSE}
+trophic_df <- lake1 %>% 
+    distinct(SAMPLE_ID, INFO_TYPE, Characteristic.Name, Result.Sample.Fraction, Result.Value, .keep_all = TRUE)
+
+trophic_df$Result.Sample.Fraction <- replace_na(trophic_df$Result.Sample.Fraction, "None")
+
+trophic_df <- trophic_df %>% 
+  mutate(FULL_CHARACTERISTIC_NAME = paste(Characteristic.Name, INFO_TYPE, Result.Sample.Fraction, sep=" ")) %>%
+  filter(FULL_CHARACTERISTIC_NAME %in% c("DEPTH, SECCHI DISK DEPTH SD None",
+                                         "PHOSPHORUS OW T",
+                                         "CHLOROPHYLL A OW T"
+                                         ))
+
+for(i in 1:nrow(trophic_df)){
+  if(trophic_df$SAMPLE_DATE[i] >= as.Date(paste(year(trophic_df$SAMPLE_DATE[i]), 07, 15, sep = "-")) & trophic_df$SAMPLE_DATE[i] <= as.Date(paste(year(trophic_df$SAMPLE_DATE[i]), 09, 15, sep = "-"))){
+    trophic_df$season[i] <- "productivity"
+  } else if(trophic_df$SAMPLE_DATE[i] >= as.Date(paste(year(trophic_df$SAMPLE_DATE[i]), 06, 1, sep = "-")) & trophic_df$SAMPLE_DATE[i] <= as.Date(paste(year(trophic_df$SAMPLE_DATE[i]), 07, 14, sep = "-"))){
+    trophic_df$season[i] <- "summer"
+  } else if(trophic_df$SAMPLE_DATE[i] >= as.Date(paste(year(trophic_df$SAMPLE_DATE[i]), 09, 15, sep = "-")) & trophic_df$SAMPLE_DATE[i] <= as.Date(paste(year(trophic_df$SAMPLE_DATE[i]), 10, 1, sep = "-"))){
+    trophic_df$season[i] <- "summer"
+  } else {
+   trophic_df$season[i] <- "not"
+  }
+}
+
+trophic_df$Result.Value <- as.numeric(trophic_df$Result.Value)
+
+trophic_df <- trophic_df %>% 
+  filter(season != "not") %>% 
+  filter(!is.na(Result.Value)) %>% 
+  group_by(FULL_CHARACTERISTIC_NAME, year, season) %>% 
+  dplyr::summarize(avg_result_s = mean(Result.Value)) %>% 
+  ungroup() %>% 
+  group_by(FULL_CHARACTERISTIC_NAME) %>%
+  dplyr::summarize(LongtermAvg = mean(avg_result_s), standard_dev = sd(avg_result_s))
+
+secchi <- trophic_df$LongtermAvg[trophic_df$FULL_CHARACTERISTIC_NAME == "DEPTH, SECCHI DISK DEPTH SD None"]
+
+
+
+if(is.na(secchi)){
+  secchi_score <- "0"
+  secchi_reason <- "unsampled"
+} else if(secchi >5){
+  secchi_score <- 3
+  secchi_reason <- "high"
+} else if(secchi <2){
+  secchi_score <- 1
+  secchi_reason <- "low"
+} else{
+  secchi_score <- 2
+  secchi_reason <- "moderate"
+}
+
+tphos <- trophic_df$LongtermAvg[trophic_df$FULL_CHARACTERISTIC_NAME == "PHOSPHORUS OW T"]
+
+if(is.na(tphos)){
+  tphos_score <- "0"
+  tphos_reason <- "unsampled"
+} else if(tphos > 0.02){
+  tphos_score <- 1
+  tphos_reason <- "high"
+} else if(tphos < 0.01){
+  tphos_score <- 3
+  tphos_reason <- "low"
+} else{
+  tphos_score <- 2
+  tphos_reason <- "moderate"
+}
+
+
+chla <- trophic_df$LongtermAvg[trophic_df$FULL_CHARACTERISTIC_NAME == "CHLOROPHYLL A OW T"]
+
+if(is.na(chla)){
+  chla_score <- "0"
+  chla_reason <- "unsampled"
+} else if(chla > 8){
+  chla_score <- 1
+  chla_reason <- "high"
+} else if(chla < 2){
+  chla_score <- 3
+  chla_reason <- "low"
+} else{
+  chla_score <- 2
+  chla_reason <- "moderate"
+}
+
+
+trophic_sum <- secchi_score + tphos_score + chla_score
+
+
+if(trophic_sum == 3){
+  overall_trophic_state <- "eutrophic"
+  ts_descriptor <- "highly productive"
+} else if(trophic_sum == 9){
+  overall_trophic_state <- "oligotrophic"
+  ts_descriptor <- "moderately to highly productive"
+} else if(trophic_sum == 6){
+  overall_trophic_state <- "mesotrophic"
+  ts_descriptor <- "moderately productive"
+} else if(trophic_sum %in% c(4,5)){
+  overall_trophic_state <- "mesoeutrophic"
+  ts_descriptor <- "moderately unproductive"
+} else if(trophic_sum %in% c(7,8)){
+  overall_trophic_state <- "mesoligotrophic"
+  ts_descriptor <- "unproductive"
+}
+
+###soluble data
+
+soluble <- lake1 %>% 
+    distinct(SAMPLE_ID, INFO_TYPE, Characteristic.Name, Result.Sample.Fraction, Result.Value, .keep_all = TRUE) %>% 
+  filter(year == report_year)
+
+thisyear_obs <- nrow(soluble)
+
+soluble$Result.Sample.Fraction <- replace_na(soluble$Result.Sample.Fraction, "None")
+
+soluble <- soluble %>% 
+  mutate(FULL_CHARACTERISTIC_NAME = paste(Characteristic.Name, INFO_TYPE, Result.Sample.Fraction, sep=" ")) %>%
+  filter(FULL_CHARACTERISTIC_NAME %in% c("PHOSPHORUS OW T",
+                                         "PHOSPHORUS OW D",
+                                         "NITROGEN, TOTAL OW T",
+                                         "NITROGEN, TOTAL DISSOLVED OW D")) %>% 
+  select(SAMPLE_ID, FULL_CHARACTERISTIC_NAME, Result.Value) %>% 
+  group_by(SAMPLE_ID, FULL_CHARACTERISTIC_NAME) %>% 
+  summarize(Result.Value = mean(as.numeric(Result.Value))) %>% 
+  ungroup()
+
+soluble$FULL_CHARACTERISTIC_NAME[soluble$FULL_CHARACTERISTIC_NAME == "PHOSPHORUS OW T"] <- "TP"
+soluble$FULL_CHARACTERISTIC_NAME[soluble$FULL_CHARACTERISTIC_NAME == "PHOSPHORUS OW D"] <- "TDP"
+soluble$FULL_CHARACTERISTIC_NAME[soluble$FULL_CHARACTERISTIC_NAME == "NITROGEN, TOTAL OW T"] <- "TN"
+soluble$FULL_CHARACTERISTIC_NAME[soluble$FULL_CHARACTERISTIC_NAME == "NITROGEN, TOTAL DISSOLVED OW D"] <- "TDN"
+
+soluble_df <-  soluble %>% 
+  spread(FULL_CHARACTERISTIC_NAME, Result.Value) %>% 
+  mutate(TDN_TN = TDN/TN) %>% 
+  mutate(TDP_TP = TDP/TP)
+
+max_p_ratio <- max(soluble_df$TDP_TP)
+avg_p_ratio <- mean(soluble_df$TDP_TP)
+max_n_ratio <- max(soluble_df$TDN_TN)
+avg_n_ratio <- mean(soluble_df$TDN_TN)
+
+if(thisyear_obs == 0){
+  soluble_nutrients <- paste("Soluble nutrients were not analyzed in ", report_year, ".", sep="")
+} else{
+  soluble_nutrients <- paste("Soluble nutrients were analyzed in ", report_year, ".", sep="")
+}
+
+if(avg_p_ratio > 0.5){
+  soluble_p <- "Most of the phosphorus in the lake is soluble, indicating a high potential for more algae growth."
+} else if(max_p_ratio > 0.5){
+  soluble_p <- "Some of the phosphorus in the lake is soluble, indicating some potential for more algae growth."
+} else if(max_p_ratio > 0.25){
+  soluble_p <- "Most of the phosphorus in the lake is not soluble, indicating a low potential for additional algae growth."
+} else{
+  soluble_p <- "Most of the phosphorus in the lake is not soluble, suggesting most of the phosphorus is bound in algae cells."
+}
+
+if(avg_n_ratio > 0.5){
+  soluble_n <- "Most of the nitrogen in the lake is soluble."
+} else if(max_n_ratio > 0.5){
+  soluble_n <- "Some of the nitrogen in the lake is soluble."
+} else if(max_n_ratio > 0.25){
+  soluble_n <- "Most of the nitrogen in the lake is not soluble."
+} else{
+  soluble_n <- "Most of the nitrogen in the lake is not soluble."
+}
+
+
+#ph, conductivity, color, nitrogen
+
+water_desc <- lake1 %>% 
+    distinct(SAMPLE_ID, INFO_TYPE, Characteristic.Name, Result.Sample.Fraction, Result.Value, .keep_all = TRUE) %>% 
+  filter(year == report_year)
+
+water_desc$Result.Sample.Fraction <- replace_na(water_desc$Result.Sample.Fraction, "None")
+
+water_desc <- water_desc %>% 
+  mutate(FULL_CHARACTERISTIC_NAME = paste(Characteristic.Name, INFO_TYPE, Result.Sample.Fraction, sep=" ")) %>%
+  filter(FULL_CHARACTERISTIC_NAME %in% c("DEPTH, SECCHI DISK DEPTH SD None",
+                                         "PHOSPHORUS OW T",
+                                         "CHLOROPHYLL A OW T",
+                                         "PH OW None",
+                                          "TRUE COLOR OW T",
+                                         "NITROGEN, TOTAL OW T",
+                                         "SPECIFIC CONDUCTANCE OW None",
+                                         "QA OW None",
+                                         "QB OW None",
+                                         "QC OW None",
+                                         "CHLORIDE OW T",
+                                         "TEMPERATURE, WATER OW None",
+                                         "TEMPERATURE, WATER BS None"
+                                         )) %>% 
+  select(FULL_CHARACTERISTIC_NAME, Result.Value) %>% 
+  group_by(FULL_CHARACTERISTIC_NAME) %>% 
+  summarize(ThisYearAvg = mean(as.numeric(Result.Value)), 
+            standard_dev = sd(as.numeric(Result.Value))) %>% 
+  ungroup()
+
+
+ph_avg <- water_desc$ThisYearAvg[water_desc$FULL_CHARACTERISTIC_NAME == "PH OW None"]
+cond_avg <- water_desc$ThisYearAvg[water_desc$FULL_CHARACTERISTIC_NAME == "SPECIFIC CONDUCTANCE OW None"]
+color_avg <- water_desc$ThisYearAvg[water_desc$FULL_CHARACTERISTIC_NAME == "TRUE COLOR OW T"]
+tnit_avg <- water_desc$ThisYearAvg[water_desc$FULL_CHARACTERISTIC_NAME == "NITROGEN, TOTAL OW T"]
+
+if(ph_avg < 6){
+  ph_descriptor <- "acidic"
+} else if(ph_avg < 6.5){
+  ph_descriptor <- "slightly acidic"
+} else if(ph_avg < 7.5){
+  ph_descriptor <- "a near neutral pH"
+} else if(ph_avg < 8){
+  ph_descriptor <- "slightly alkaline or basic"
+} else{
+  ph_descriptor <- "highly alkaline or basic"
+}
+
+if(cond_avg < 100){
+  cond_descriptor <- "soft water"
+} else if(cond_avg < 250){
+  cond_descriptor <- "intermediate hardness water"
+} else if(cond_avg < 400){
+  cond_descriptor <- "hard water"
+} else{
+  cond_descriptor <- "extremely hard water"
+}
+
+if(color_avg < 10){
+  color_descriptor <- "low water color"
+} else if(color_avg < 30){
+  color_descriptor <- "moderately low water color"
+} else if(color_avg < 50){
+  color_descriptor <- "moderately high water color"
+} else{
+  color_descriptor <- "high water color"
+}
+
+if(tnit_avg < 0.3){
+  tnit_descriptor <- "low nitrogen levels"
+} else if(tnit_avg < 0.5){
+  tnit_descriptor <- "moderately low nitrogen levels"
+} else if(tnit_avg < 0.8){
+  tnit_descriptor <- "moderately high nitrogen levels"
+} else{
+  tnit_descriptor <- "high nitrogen levels"
+}
+
+
+```
+
+
+**Q. What is the condition of the lake?**
+
+A. `r titles[1]` continues to be  `r overall_trophic_state`, or `r ts_descriptor`, based on `r secchi_reason` water clarity, `r chla_reason` algae levels (chlorophyll a), and `r tphos_reason` nutrient (phosphorous) levels. `r soluble_nutrients` `r soluble_p` `r soluble_n` The waterbody is `r ph_descriptor`, with `r cond_descriptor`, `r color_descriptor`, and `r tnit_descriptor`. 
+
+```{r prevyears_summary, echo=FALSE, message=FALSE, warning=FALSE}
+prev_decade <- lake1 %>% 
+    distinct(SAMPLE_ID, INFO_TYPE, Characteristic.Name, Result.Sample.Fraction, Result.Value, .keep_all = TRUE) %>% 
+  filter(as.numeric(year) < as.numeric(report_year)) %>% 
+  filter(as.numeric(year) >= (as.numeric(report_year) - 10))
+
+prev_decade$Result.Sample.Fraction <- replace_na(prev_decade$Result.Sample.Fraction, "None")
+
+prev_decade <- prev_decade %>% 
+  mutate(FULL_CHARACTERISTIC_NAME = paste(Characteristic.Name, INFO_TYPE, Result.Sample.Fraction, sep=" ")) %>%
+  filter(FULL_CHARACTERISTIC_NAME %in% c("DEPTH, SECCHI DISK DEPTH SD None",
+                                         "PHOSPHORUS OW T",
+                                         "CHLOROPHYLL A OW T",
+                                         "PH OW None",
+                                          "TRUE COLOR OW T",
+                                         "NITROGEN, TOTAL OW T",
+                                         "SPECIFIC CONDUCTANCE OW None",
+                                         "QA OW None",
+                                         "QB OW None",
+                                         "QC OW None",
+                                         "CHLORIDE OW T",
+                                         "TEMPERATURE, WATER OW None",
+                                         "TEMPERATURE, WATER BS None"
+                                         )) %>% 
+  select(FULL_CHARACTERISTIC_NAME, Result.Value) %>% 
+  filter(Result.Value != "NA") %>% 
+  group_by(FULL_CHARACTERISTIC_NAME) %>% 
+  summarize(TenYearAvg = mean(as.numeric(Result.Value))) %>% 
+  ungroup()
+
+trends <- full_join(prev_decade, water_desc) %>% 
+  mutate(change = abs(TenYearAvg - ThisYearAvg)) %>% 
+  mutate(sig = change - standard_dev)
+
+FULL_CHARACTERISTIC_NAME <- c("DEPTH, SECCHI DISK DEPTH SD None",
+                                         "PHOSPHORUS OW T",
+                                         "CHLOROPHYLL A OW T",
+                                         "PH OW None",
+                                          "TRUE COLOR OW T",
+                                         "NITROGEN, TOTAL OW T",
+                                         "SPECIFIC CONDUCTANCE OW None",
+                                         "QA OW None",
+                                         "QB OW None",
+                                         "QC OW None",
+                                         "CHLORIDE OW T",
+                                         "TEMPERATURE, WATER OW None",
+                                         "TEMPERATURE, WATER BS None"
+                                         )
+
+ordering <- data.frame(FULL_CHARACTERISTIC_NAME)
+
+trends <- left_join(ordering, trends)
+
+
+for(i in 1:nrow(trends)){
+  if(is.na(trends$sig[i])){
+  trends$comparison[i] <- "insufficient data"
+  } else if(trends$sig[i] < 0){
+    trends$comparison[i] <- "similar"
+  } else if(trends$sig[i] > 0){
+    if(trends$TenYearAvg[i] > trends$ThisYearAvg[i]){
+       trends$comparison[i] <- "lower"
+    } else if (trends$TenYearAvg[i] < trends$ThisYearAvg[i]){
+      trends$comparison[i] <- "higher"
+    }
+  }
+}
+
+
+
+
+trends_q <- trends %>% 
+  filter(FULL_CHARACTERISTIC_NAME %in% c("QA OW None", "QB OW None", "QC OW None"))
+
+trends <- trends %>% 
+  filter(!FULL_CHARACTERISTIC_NAME %in% c("QA OW None", "QB OW None", "QC OW None"))
+
+trends_q$FULL_CHARACTERISTIC_NAME[trends_q$FULL_CHARACTERISTIC_NAME == "QA OW None"] <- "water quality evaluation"
+trends_q$FULL_CHARACTERISTIC_NAME[trends_q$FULL_CHARACTERISTIC_NAME == "QB OW None"] <- "aquatic plant coverage"
+trends_q$FULL_CHARACTERISTIC_NAME[trends_q$FULL_CHARACTERISTIC_NAME == "QC OW None"] <- "recreational evaluation"
+
+
+trends$FULL_CHARACTERISTIC_NAME[trends$FULL_CHARACTERISTIC_NAME == "DEPTH, SECCHI DISK DEPTH SD None"] <- "water clarity (secchi)"
+trends$FULL_CHARACTERISTIC_NAME[trends$FULL_CHARACTERISTIC_NAME == "PHOSPHORUS OW T"] <- "total phosphorous"
+trends$FULL_CHARACTERISTIC_NAME[trends$FULL_CHARACTERISTIC_NAME == "CHLOROPHYLL A OW T"] <- "extracted chlorophyll a"
+trends$FULL_CHARACTERISTIC_NAME[trends$FULL_CHARACTERISTIC_NAME == "PH OW None"] <- "pH"
+trends$FULL_CHARACTERISTIC_NAME[trends$FULL_CHARACTERISTIC_NAME ==  "TRUE COLOR OW T"] <- "color"
+trends$FULL_CHARACTERISTIC_NAME[trends$FULL_CHARACTERISTIC_NAME ==  "NITROGEN, TOTAL OW T"] <- "total nitrogen"
+trends$FULL_CHARACTERISTIC_NAME[trends$FULL_CHARACTERISTIC_NAME ==  "SPECIFIC CONDUCTANCE OW None"] <- "conductivity"
+trends$FULL_CHARACTERISTIC_NAME[trends$FULL_CHARACTERISTIC_NAME == "CHLORIDE OW T"] <- "chloride"
+trends$FULL_CHARACTERISTIC_NAME[trends$FULL_CHARACTERISTIC_NAME == "TEMPERATURE, WATER OW None"] <- "surface water temperature"
+trends$FULL_CHARACTERISTIC_NAME[trends$FULL_CHARACTERISTIC_NAME == "TEMPERATURE, WATER BS None"] <- "deep water temperature"
+
+
+###make this into for loop eventually
+
+insuff <- trends %>% 
+  filter(comparison == "insufficient data") 
+if(nrow(insuff) > 1){
+  heads <- toString(head(insuff$FULL_CHARACTERISTIC_NAME, -1))
+  tails <- toString(tail(insuff$FULL_CHARACTERISTIC_NAME, 1))
+  insuff_list <- paste(heads, "and", tails, sep=" ")
+} else if(nrow(insuff) == 1){
+  insuff_list <- insuff$FULL_CHARACTERISTIC_NAME[1]
+} 
+
+insuff_q <- trends_q %>% 
+  filter(comparison == "insufficient data")
+if(nrow(insuff_q) > 1){
+  heads <- toString(head(insuff_q$FULL_CHARACTERISTIC_NAME, -1))
+  tails <- toString(tail(insuff_q$FULL_CHARACTERISTIC_NAME, 1))
+  insuff_q_list <- paste(heads, "and", tails, sep=" ")
+} else if(nrow(insuff) == 1){
+  insuff__q_list <- insuff_q$FULL_CHARACTERISTIC_NAME[1]
+} 
+
+sim <- trends %>% 
+  filter(comparison == "similar")
+if(nrow(sim) > 1){
+  heads <- toString(head(sim$FULL_CHARACTERISTIC_NAME, -1))
+  tails <- toString(tail(sim$FULL_CHARACTERISTIC_NAME, 1))
+  sim_list <- paste(heads, "and", tails, sep=" ")
+} else if(nrow(sim) == 1){
+  sim_list <- sim$FULL_CHARACTERISTIC_NAME[1]
+} 
+
+sim_q <- trends_q %>% 
+  filter(comparison == "similar")
+if(nrow(sim_q) > 1){
+  heads <- toString(head(sim_q$FULL_CHARACTERISTIC_NAME, -1))
+  tails <- toString(tail(sim_q$FULL_CHARACTERISTIC_NAME, 1))
+  sim_q_list <- paste(heads, "and", tails, sep=" ")
+} else if(nrow(sim_q) == 1){
+  sim_q_list <- sim_q$FULL_CHARACTERISTIC_NAME[1]
+} 
+
+low <- trends %>% 
+  filter(comparison == "lower")
+if(nrow(low) > 1){
+  heads <- toString(head(low$FULL_CHARACTERISTIC_NAME, -1))
+  tails <- toString(tail(low$FULL_CHARACTERISTIC_NAME, 1))
+  low_list <- paste(heads, "and", tails, sep=" ")
+} else if(nrow(low) == 1){
+  low_list <- low$FULL_CHARACTERISTIC_NAME[1]
+} 
+
+low_q <- trends_q %>% 
+  filter(comparison == "lower")
+if(nrow(low_q) > 1){
+  heads <- toString(head(low_q$FULL_CHARACTERISTIC_NAME, -1))
+  tails <- toString(tail(low_q$FULL_CHARACTERISTIC_NAME, 1))
+  low_q_list <- paste(heads, "and", tails, sep=" ")
+} else if(nrow(low_q) == 1){
+  low_q_list <- low_q$FULL_CHARACTERISTIC_NAME[1]
+} 
+
+
+high <- trends %>% 
+  filter(comparison == "higher")
+if(nrow(high) > 1){
+  heads <- toString(head(high$FULL_CHARACTERISTIC_NAME, -1))
+  tails <- toString(tail(high$FULL_CHARACTERISTIC_NAME, 1))
+  high_list <- paste(heads, "and", tails, sep=" ")
+}else if(nrow(high) == 1){
+  high_list <- high$FULL_CHARACTERISTIC_NAME[1]
+} 
+
+high_q <- trends_q %>% 
+  filter(comparison == "higher")
+if(nrow(high_q) > 1){
+  heads <- toString(head(high_q$FULL_CHARACTERISTIC_NAME, -1))
+  tails <- toString(tail(high_q$FULL_CHARACTERISTIC_NAME, 1))
+  high_q_list <- paste(heads, "and", tails, sep=" ")
+} else if(nrow(high_q) == 1){
+  high_q_list <- high_q$FULL_CHARACTERISTIC_NAME[1]
+} 
+
+
+if(nrow(high) == 0){
+    if(nrow(high_q) ==0){
+      higher_sentence <- ""
+    } else if(nrow(high_q) == 1){
+      higher_sentence <- paste0("Compared to previous years, ", high_q_list, " was less favorable in ",         report_year, ".") 
+    } else if(nrow(high_q) > 1){
+      higher_sentence <- paste0("Compared to previous years, ", high_q_list, " were less favorable in ",        report_year, ".")}
+} else if(nrow(high) == 1){
+    if(nrow(high_q) == 0){
+      higher_sentence <- paste0("Compared to previous years, ", high_list, " was higher in ",           
+      report_year, ".")
+    } else if(nrow(high_q) == 1){
+      higher_sentence <- paste0("Compared to previous years, ", high_list, " was higher in ",        
+      report_year, " and ", high_q_list, " was less favorable in ", report_year, ".")
+    } else if(nrow(high_q) > 1){
+      higher_sentence <- paste0("Compared to previous years, ", high_list, " was higher in ", 
+      report_year, " and ", high_q_list, " was less favorable in ", report_year, ".")}
+} else if(nrow(high) > 1){
+    if(nrow(high_q) == 0){
+      higher_sentence <- paste0("Compared to previous years, ", high_list, " were higher in ",        
+      report_year, ".")
+    } else if(nrow(high_q) == 1){
+      higher_sentence <- paste0("Compared to previous years, ", high_list, " were higher in ",        
+      report_year, " and ", high_q_list, " was less favorable in ", report_year, ".")
+    } else if(nrow(high_q) > 1){
+      higher_sentence <- paste0("Compared to previous years, ", high_list, " were higher in ", 
+      report_year, " and ", high_q_list, " were less favorable in ", report_year, ".")}
+}
+
+
+if(nrow(low) == 0){
+    if(nrow(low_q) == 0){
+      lower_sentence <- " "
+    } else if(nrow(low_q) == 1){
+      lower_sentence <- paste0("Compared to previous years, ", low_q_list, " was more favorable in ",         report_year, ".") 
+    } else if(nrow(low_q) > 1){
+      lower_sentence <- paste0("Compared to previous years, ", low_q_list, " were more favorable in ",        report_year, ".")}
+} else if(nrow(low) == 1){
+    if(nrow(low_q) == 0){
+      lower_sentence <- paste0("Compared to previous years, ", low_list, " was lower in ",           
+      report_year, ".")
+    } else if(nrow(low_q) == 1){
+      lower_sentence <- paste0("Compared to previous years, ", low_list, " was lower in ",        
+      report_year, " and ", low_q_list, " was more favorable in ", report_year, ".")
+    } else if(nrow(low_q) > 1){
+      lower_sentence <- paste0("Compared to previous years, ", low_list, " was lower in ", 
+      report_year, " and ", low_q_list, " was more favorable in ", report_year, ".")}
+} else if(nrow(low) > 1){
+    if(nrow(low_q) == 0){
+      lower_sentence <- paste0("Compared to previous years, ", low_list, " were lower in ",        
+      report_year, ".")
+    } else if(nrow(low_q) == 1){
+      lower_sentence <- paste0("Compared to previous years, ", low_list, " were lower in ",        
+      report_year, " and ", low_q_list, " was more favorable in ", report_year, ".")
+    } else if(nrow(low_q) > 1){
+      lower_sentence <- paste0("Compared to previous years, ", low_list, " were lower in ", 
+      report_year, " and ", low_q_list, " was more favorable in ", report_year, ".")}
+}
+
+
+```
+**Q. How did this year compare to previous years?**
+
+A. `r higher_sentence` `r lower_sentence`
+
+**Q. How does this lake compare to other New York lakes?**
+
+A. 
+
+**Q. Are there any (statistically significant) trends?**
+
+A.
+
+**Q. Has the lake experienced harmful algal blooms (HABs)?**
+
+A.
+
+```{r invasive_summary, echo=FALSE, message=FALSE, warning=FALSE}
+lake_info <- read.csv(file = "C:/Users/amtweitm/OneDrive - New York State Office of Information Technology Services/Documents/R/CSLAP_reporting/data/lake_info.csv") %>% 
+  filter(LakeID == ids)
+
+if(lake_info$Invasive.Animals.[1] %in% c(NA, "none reported", "")){
+  inv_animals <- 0
+} else{inv_animals <- 1}
+
+if(inv_animals == 1){
+ lake_info$Invasive.Animals.[1] <- str_replace_all(lake_info$Invasive.Animals.[1], ";", ",")
+}
+
+if(lake_info$Invasive.Plants.[1] %in% c(NA, "none reported", "")){
+  inv_plants <- 0
+} else{inv_plants <- 1}
+
+if(inv_plants == 1){
+  lake_info$Invasive.Plants.[1] <- str_replace_all(lake_info$Invasive.Plants.[1], ";", ",")
+}
+
+invasives <- inv_animals + inv_plants
+
+if(invasives == 0){
+  invasives_present <- "No invasive species have been reported in this waterbody. "
+} else if(invasives > 0){
+    if(inv_animals == 0){
+      invasives_present <- paste("Invasive species have been reported in this waterbody. Aquatic invasive plant and/or animal species reported include: ", lake_info$Invasive.Plants.[1], ".", sep="")
+    } else if (inv_plants == 0){
+      invasives_present <- paste("Invasive species have been reported in this waterbody. Aquatic invasive plant and/or animal species reported include: ", lake_info$Invasive.Animals.[1],  ".", sep="")
+    } else{
+      invasives_present <- paste("Invasive species have been reported in this waterbody. Aquatic invasive plant and/or animal species reported include: ", lake_info$Invasive.Animals.[1], ", ", lake_info$Invasive.Plants.[1], ".", sep="")
+    }
+}
+
+calcium <- lake1 %>% 
+  filter(Characteristic.Name == "CALCIUM") %>% 
+  filter(!is.na(Result.Value)) %>% 
+  group_by(Characteristic.Name, year) %>% 
+  summarize(avg_calc = mean(as.numeric(Result.Value))) %>% 
+  ungroup() %>% 
+  group_by(Characteristic.Name) %>% 
+  summarize(Longterm_Avg = mean(avg_calc))
+
+  
+
+if(invasives > 0){
+ inv_vulnerability <- "This waterbody has high vulnerability for new invasives, based on invasive species already introduced and calcium levels." 
+} else if(is.na(calcium$Longterm_Avg[1])){
+  inv_vulnerability <- "This waterbody has unknown vulnerability."
+} else if(calcium$Longterm_Avg[1] > 30){
+  inv_vulnerability <- "This waterbody has high vulnerability for new invasives, based on calcium levels."
+} else if(calcium$Longterm_Avg[1] >= 15 & calcium$Longterm_Avg[1] <= 30){
+  inv_vulnerability <- "This waterbody has moderate vulnerability, based on calcium levels."
+} else if(calcium$Longterm_Avg[1] < 15){
+  inv_vulnerability <- "This waterbody has low vulnerability, based on calcium levels."
+}
+
+```
+
+**Q. Have any aquatic invasive species (AIS) been reported?**
+
+A. `r invasives_present` `r inv_vulnerability`

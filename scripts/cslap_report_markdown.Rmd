@@ -47,3 +47,10 @@ dp<-data %>%
 
 ```{r, child= 'report_card_markdown.Rmd'}
 ```
+
+```{r, child= 'lake_summary_markdown.Rmd'}
+```
+
+```{r, child= 'how_to_glossary_markdown.Rmd'}
+```
+

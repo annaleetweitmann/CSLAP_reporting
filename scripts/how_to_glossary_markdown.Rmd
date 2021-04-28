@@ -1,0 +1,133 @@
+---
+output: html_document
+editor_options: 
+  markdown: 
+    wrap: sentence
+---
+
+# How to Read the Report
+
+This guide provides a description of the CSLAP report by section and a glossary.
+The sampling site is indicated in the header for lakes with more than one routine sampling site.
+
+**Physical Characteristics influence lake quality:**
+
+-   Surface area is the lake's surface in acres and hectares.
+
+-   Max depth is the water depth measured at the deepest part of the lake in feet and meters.
+
+-   Mean depth is either known from lake bathymetry or is 0.46 of the maximum depth.
+
+-   Retention time is the time it takes for water to pass through a lake in years.
+    This indicates the influence of the watershed on lake conditions.
+
+-   Lake classification describes the "best uses" for this lake.
+    Class AA, AAspec, and A lakes may be used as sources of potable water.
+    Class B lakes are suitable for contact recreational activities, like swimming.
+    Class C lakes are suitable for non-contact recreational activities, including fishing, although they may still support swimming.
+    The addition of a T or TS to any of these classes indicates the ability of a lake to support trout populations and/or trout spawning.
+
+-   Dam classification defines the hazard class of a dam.
+    Class A, B, C, and D dams are defined as low, intermediate, high, or negligible/no hazard dams in that order.
+    "0" indicates that no class has been assigned to a particular dam, or that no dam exists.
+
+**Watershed characteristics influence lake water quality:**
+
+-   Watershed area in acres and hectares
+
+-   Land use data come from the most recent (2011) US Geological Survey National Land Use Cover dataset
+
+**CSLAP Participation lists the sampling years and the current year volunteers.**
+
+**Key lake status indicators summarize lake conditions:**
+
+-   Trophic state of a lake refers to its nutrient loading and productivity, measured by phosphorus, algae, and clarity.
+    An oligotrophic lake has low nutrient and algae levels (low productivity) and high clarity while a eutrophic lake has high nutrient and algae levels (high productivity) and low clarity.
+    Mesotrophic lakes fall in the middle.
+
+-   Harmful algal bloom susceptibility summarizes the available historical HAB data and indicates the potential for future HAB events.
+
+-   Invasive vulnerability indicates whether aquatic invasive species are found in this lake or in nearby lakes, indicating the potential for further introductions.
+
+-   Priority waterbody list (PWL) assessment is based on the assessment of use categories and summarized as fully supported, threatened, stressed, impaired, or precluded.
+    Aesthetics and habitat are evaluated as good, fair, or poor.
+    The cited PWL assessment reflects the "worst" assessment for the lake.
+
+**Current year sampling results**
+
+-   Results for each of the sampling sessions in the year are in tabular form.
+    The seasonal change graphically shows the current year results.
+    Red shading indicates eutrophic readings.
+
+-   HAB notification periods on the DEC website <http://www.dec.ny.gov/chemical/83310.html>
+
+-   Shoreline HAB sample dates and results.
+    Samples are collected from the area that appears to have the worst bloom.
+    Red shading indicates a confirmed HAB.
+
+-   HAB sample algae analysis.
+    Algae types typically change during the season.
+    These charts show the amount of the different types of algae found in each mid-lake or shoreline sample.
+    Samples with high levels of BGA are HABs.
+    The second set of charts show the level of toxins found in open water and shoreline samples compared to the World Health Organization (WHO) guidelines.
+
+-   If there are more than ten shoreline bloom samples collected in a year, bloom sample information is instead summarized by month (May-Oct.) as minimum, average, and maximum values for blue-green algae and microcystin.
+
+**Long-Term Trend Analysis** puts the current year findings in context.
+Summer averages (mid-June thru mid-September) for each of the CSLAP years show trends in key water quality indicators.
+The graphs include relevant criteria (trophic categories, water quality standards, etc.) and boundaries separating these criteria.
+
+**In-Season Analysis** shows water temperature and water clarity during the sampling season.
+These indicate seasonal changes and show the sample year results compared to the typical historical readings for those dates.
+
+**The Lake Scorecard** represents key water quality indicator results for this lake in an easy-to-read format, comparing information from the current year and historical average of the CSLAP data.
+Indicators include (1) trophic status of phosphorus, chlorophyll (or algae) and secchi (or clarity); (2) presence or absence of aquatic invasive plants or animals; (3) lake user perception based on perceived physical condition and recreational suitability of the lake; (4) harmful algal bloom samples or reports; and (5) algae levels in the open water of routinely sampled sites.
+
+**The Lake Summary** reviews and encapsulates the data in the lake report, including comparisons to historical data from this lake, and results from nearby lakes.
+
+## Glossary of Water Quality and HAB Indicators 
+
+**Clarity (m):** The depth to which a Secchi disk lowered into the water is visible, measured in meters.
+Water clarity is one of the trophic indicators for each lake.
+
+**TP (mg/L):** Total phosphorus, measured in milligrams per liter at the lake surface (1.5 meters below the surface).
+TP includes all dissolved and particulate forms of phosphorus.
+
+**Deep TP:** Total phosphorus measured in milligrams per liter at depth (1-2 meters above the lake bottom at the deepest part of the lake or a fixed depth in the hypolimnion of very deep lakes).
+
+**TN:** Total nitrogen, measured in milligrams per liter at the lake surface.
+TN includes all forms of nitrogen, including NOx (nitrite and nitrate) and NH4 (ammonia).
+
+**N:P Ratio:** The ratio of total nitrogen to total phosphorus, unitless (mass ratio).
+This ratio helps determine if a lake is phosphorous or nitrogen limited.
+
+**Chl.a (μg/L):** Chlorophyll a, measured in micrograms per liter.
+Indicates the amount of algae in the water column.
+This is an extracted chlorophyll measurement.
+
+**pH:** A range from 0 to 14, with 0 being the most acidic and 14 being the most basic or alkaline.
+A healthy lake generally ranges between 6.5 and 8.5.
+
+**Cond (μmho/cm):** Specific conductance is a measure of the conductivity of water.
+A higher value indicates the presence of more dissolved ions.
+High ion concentrations (\> 250) usually indicate hardwater, and low readings (\< 125) usually show softwater.
+
+**Calcium (mg/L):** Calcium, a component of lake buffering capacity (the ability to neutralize acid inputs), as measured in milligrams per liter at the lake surface (1.5 meters below the surface).
+
+**Chloride (mg/L):** Chloride, or chloride ions, as measured in milligrams per liter at the lake surface (1.5 meters below the surface).
+
+**Upper Temp (°C):** Surface temperature, measured in degrees Celsius.
+
+**Deep Temp (°C):** Deep water temperature, measured in degrees Celsius.
+
+**BG Chl.a (μg/L):** Chlorophyll a from blue-green algae, measured in micrograms per liter.
+This is an "unextracted" estimate using a fluoroprobe.
+This result is different from the extracted chlorophyll measurement described above.
+
+**HABs:** Harmful Algal Blooms.
+Algal blooms that have the appearance of cyanobacteria (BGA).
+
+**BGA:** Blue-green algae, also known as cyanobacteria.
+
+**Microcystin (μg/L):** The most common HAB liver toxin; total microcystin above 20 micrograms per liter indicates a "high toxin" bloom.
+However, ALL BGA blooms pose a potential health risk and should be avoided.
