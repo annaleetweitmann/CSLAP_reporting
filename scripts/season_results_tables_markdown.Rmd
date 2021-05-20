@@ -1,10 +1,8 @@
 ---
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 ---
-
-## `r titles[1]` -- `r report_year[1]` Sampling Season Results
-
-"Seasonal change" shows current year variability. Light red color indicates eutrophic conditions in top table and bloom conditions in bottom table. Summer averages for each of the CSLAP years and long term trend analyses show trends in key water quality indicators over a consistent index period (mid-June thru mid-September).
 
 ```{r in-season-table, echo=FALSE, message=FALSE, warning=FALSE}
 
@@ -98,7 +96,7 @@ this_season_long_shortdate <- full_join(this_season_long, tntp_df) %>%
   dplyr::summarize(RESULT_VALUE = mean(RESULT_VALUE))
 
 
-list_of_dates <- as.vector(as.character(this_season_long_shortdate$SAMPLE_DATE_SHORT)) %>% 
+list_of_dates <- sort(as.vector(as.character(this_season_long_shortdate$SAMPLE_DATE_SHORT))) %>% 
   unique()
 
 owi_table <- spread(this_season_long_shortdate, SAMPLE_DATE_SHORT, RESULT_VALUE)
@@ -152,7 +150,10 @@ norm_char_averages_df <- averages_df %>%
                                          "CHLORIDE BS T",
                                          "TEMPERATURE, WATER OW None",
                                          "TEMPERATURE, WATER BS None",
-                                         "CHLOROPHYLL A (PROBE) CONCENTRATION, CYANOBACTERIA (BLUEGREEN) OW None"
+                                         "CHLOROPHYLL A (PROBE) CONCENTRATION, CYANOBACTERIA (BLUEGREEN) OW None",
+                                         "DEPTH, SECCHI DISK DEPTH SD None",
+                                         "PHOSPHORUS OW T",
+                                         "CHLOROPHYLL A OW T"
                                          )) %>% 
   filter(!is.na(Result.Value))
 
@@ -162,82 +163,20 @@ norm_char_averages_df$Result.Value <- as.numeric(norm_char_averages_df$Result.Va
 nc_thisyear <- norm_char_averages_df %>% 
   filter(year == report_year) %>% 
   group_by(FULL_CHARACTERISTIC_NAME) %>% 
-  dplyr::summarize(Season_Avg = mean(Result.Value))
+  dplyr::summarize(Season_Avg = median(Result.Value))
 
 nc_tenyear  <- norm_char_averages_df %>% 
-  filter(year != report_year) %>% 
   filter(year > (as.numeric(report_year) - 10)) %>% 
   group_by(FULL_CHARACTERISTIC_NAME) %>% 
-  dplyr::summarize(TenYear_Avg = mean(Result.Value))
+  dplyr::summarize(TenYear_Avg = median(Result.Value))
 
 nc_allyear  <- norm_char_averages_df %>% 
-  filter(year != report_year) %>% 
   group_by(FULL_CHARACTERISTIC_NAME) %>% 
-  dplyr::summarize(Longterm_Avg = mean(Result.Value))
+  dplyr::summarize(Longterm_Avg = median(Result.Value))
 
 join1 <- full_join(nc_thisyear, nc_tenyear)
 
 normchar_summary <- full_join(join1,nc_allyear)
-
-###seasonal avg and longterm averages (10,30 yrs) for chlorophyll, secchi and phos
-
-twoavgs_chars <- lake1 %>% 
-  distinct(SAMPLE_ID, INFO_TYPE, Characteristic.Name, Result.Sample.Fraction, Result.Value, .keep_all = TRUE)
-
-twoavgs_chars$Result.Sample.Fraction <- replace_na(twoavgs_chars$Result.Sample.Fraction, "None")
-
-
-twoavgs_chars <- twoavgs_chars %>% 
-  mutate(FULL_CHARACTERISTIC_NAME = paste(Characteristic.Name, INFO_TYPE, Result.Sample.Fraction, sep=" ")) %>%
-  filter(FULL_CHARACTERISTIC_NAME %in% c("DEPTH, SECCHI DISK DEPTH SD None",
-                                         "PHOSPHORUS OW T",
-                                         "CHLOROPHYLL A OW T"
-                                         ))
-
-twoavgs_chars$season <- 0
-
-for(i in 1:nrow(twoavgs_chars)){
-  if(twoavgs_chars$SAMPLE_DATE[i] >= as.Date(paste(year(twoavgs_chars$SAMPLE_DATE[i]), 07, 15, sep = "-")) & twoavgs_chars$SAMPLE_DATE[i] <= as.Date(paste(year(twoavgs_chars$SAMPLE_DATE[i]), 09, 15, sep = "-"))){
-    twoavgs_chars$season[i] <- "productivity"
-  } else if(twoavgs_chars$SAMPLE_DATE[i] >= as.Date(paste(year(twoavgs_chars$SAMPLE_DATE[i]), 06, 1, sep = "-")) & twoavgs_chars$SAMPLE_DATE[i] <= as.Date(paste(year(twoavgs_chars$SAMPLE_DATE[i]), 07, 14, sep = "-"))){
-    twoavgs_chars$season[i] <- "summer"
-  } else if(twoavgs_chars$SAMPLE_DATE[i] >= as.Date(paste(year(twoavgs_chars$SAMPLE_DATE[i]), 09, 15, sep = "-")) & twoavgs_chars$SAMPLE_DATE[i] <= as.Date(paste(year(twoavgs_chars$SAMPLE_DATE[i]), 10, 1, sep = "-"))){
-    twoavgs_chars$season[i] <- "summer"
-  } else {
-    twoavgs_chars$season[i] <- "not"
-  }
-}
-
-twoavgs_chars$Result.Value <- as.numeric(twoavgs_chars$Result.Value)
-
-twoavgs_byyear <- twoavgs_chars %>% 
-  filter(season != "not") %>% 
-  group_by(FULL_CHARACTERISTIC_NAME, year, season) %>% 
-  dplyr::summarize(avg_result_s = mean(Result.Value)) %>% 
-  ungroup() %>% 
-  group_by(FULL_CHARACTERISTIC_NAME, year) %>%
-  dplyr::summarize(avg_result = mean(avg_result_s)) %>% 
-  na.omit()
-
-thisyear <- twoavgs_byyear %>% 
-  filter(year == report_year) %>% 
-  group_by(FULL_CHARACTERISTIC_NAME) %>% 
-  dplyr::summarize(Season_Avg = mean(avg_result))
-
-tenyear  <- twoavgs_byyear %>% 
-  filter(year != report_year) %>% 
-  filter(year > (as.numeric(report_year) - 10)) %>% 
-  group_by(FULL_CHARACTERISTIC_NAME) %>% 
-  dplyr::summarize(TenYear_Avg = mean(avg_result))
-
-allyear  <- twoavgs_byyear %>% 
-  filter(year != report_year) %>% 
-  group_by(FULL_CHARACTERISTIC_NAME) %>% 
-  dplyr::summarize(Longterm_Avg = mean(avg_result))
-
-join1 <- full_join(thisyear, tenyear)
-
-twoavg_summary <- full_join(join1,allyear)
 
 #summarizing tntp seasonal, tn year, and all time avgs
 
@@ -266,26 +205,24 @@ tntp_lt <- full_join(tn_lt, tp_lt) %>%
 thisyear_tntp <- tntp_lt %>% 
   filter(year == report_year) %>% 
   group_by(FULL_CHARACTERISTIC_NAME) %>% 
-  dplyr::summarize(Season_Avg = mean(RESULT_VALUE))
+  dplyr::summarize(Season_Avg = median(RESULT_VALUE))
 
 tenyear_tntp  <- tntp_lt %>% 
-  filter(year != report_year) %>% 
   filter(year > (as.numeric(report_year) - 10)) %>% 
+  filter(!is.na(RESULT_VALUE)) %>% 
   group_by(FULL_CHARACTERISTIC_NAME) %>% 
-  dplyr::summarize(TenYear_Avg = mean(RESULT_VALUE))
+  dplyr::summarize(TenYear_Avg = median(RESULT_VALUE))
 
 allyear_tntp  <- tntp_lt %>% 
-  filter(year != report_year) %>% 
+  filter(!is.na(RESULT_VALUE)) %>%
   group_by(FULL_CHARACTERISTIC_NAME) %>% 
-  dplyr::summarize(Longterm_Avg = mean(RESULT_VALUE))
+  dplyr::summarize(Longterm_Avg = median(RESULT_VALUE))
 
 join1 <- full_join(thisyear_tntp, tenyear_tntp)
 
 tntp_summary <- full_join(join1,allyear_tntp)
 
-longterm_summary <- full_join(tntp_summary, twoavg_summary)
-
-all_summary <- full_join(normchar_summary, longterm_summary)
+all_summary <- full_join(normchar_summary, tntp_summary)
 
 
 
@@ -419,6 +356,8 @@ lake2 <- lake2 %>%
 
 
 samps_by_season <- lake2 %>% 
+  select(FULL_CHARACTERISTIC_NAME, month, year, Result.Value) %>% 
+  na.omit() %>% 
   select(FULL_CHARACTERISTIC_NAME, month, year) %>% 
   unique() %>% 
   group_by(FULL_CHARACTERISTIC_NAME, month) %>% 
@@ -427,10 +366,13 @@ samps_by_season <- lake2 %>%
   ungroup() %>% 
   group_by(FULL_CHARACTERISTIC_NAME) %>% 
   dplyr::summarize(num_pairs = n()) %>% 
-  filter(num_pairs > 2)
+  filter(num_pairs > 2) %>% 
+  ungroup()
 
 samps_by_season_10yr <- lake2 %>% 
   filter(year >= (as.numeric(report_year)-10)) %>% 
+  select(FULL_CHARACTERISTIC_NAME, month, year, Result.Value) %>% 
+  na.omit() %>% 
   select(FULL_CHARACTERISTIC_NAME, month, year) %>% 
   unique() %>% 
   group_by(FULL_CHARACTERISTIC_NAME, month) %>% 
@@ -439,13 +381,15 @@ samps_by_season_10yr <- lake2 %>%
   ungroup() %>% 
   group_by(FULL_CHARACTERISTIC_NAME) %>% 
   dplyr::summarize(num_pairs = n()) %>% 
-  filter(num_pairs > 2)
+  filter(num_pairs > 2) %>% 
+  ungroup()
 
 
 kt_results <- data.frame(matrix(ncol = 3, nrow = nrow(samps_by_season)))
 x <- c("FULL_CHARACTERISTIC_NAME", "slope_lg", "pval_lg")
 colnames(kt_results) <- x
 
+if(nrow(samps_by_season) > 0){
 for(i in 1:nrow(samps_by_season)){
   temp1 <- lake2 %>% 
   filter(FULL_CHARACTERISTIC_NAME == samps_by_season$FULL_CHARACTERISTIC_NAME[i]) %>% distinct()
@@ -457,11 +401,19 @@ for(i in 1:nrow(samps_by_season)){
   kt_results$slope_lg[i] <- ktau$estimate[2]
   
   kt_results$pval_lg[i] <- ktau$p.value[2]
-  }  
+}
 
-
-kt_results <- kt_results %>% 
+  kt_results <- kt_results %>% 
   na.omit()
+
+} else {
+  kt_results <- data.frame(matrix(ncol = 3, nrow = 1))
+  x <- c("FULL_CHARACTERISTIC_NAME", "slope_lg", "pval_lg")
+  colnames(kt_results) <- x
+  }
+
+
+
 
 ###kt, 10 yr
 
@@ -474,6 +426,7 @@ kt_results_10 <- data.frame(matrix(ncol = 3, nrow = nrow(samps_by_season_10yr)))
 x <- c("FULL_CHARACTERISTIC_NAME", "slope_10", "pval_10")
 colnames(kt_results_10) <- x
 
+if(nrow(samps_by_season_10yr > 0)){
 for(i in 1:nrow(samps_by_season_10yr)){
   temp1 <- lake3 %>% 
   filter(FULL_CHARACTERISTIC_NAME == samps_by_season_10yr$FULL_CHARACTERISTIC_NAME[i]) %>% distinct()
@@ -485,14 +438,86 @@ for(i in 1:nrow(samps_by_season_10yr)){
   kt_results_10$slope_10[i] <- ktau$estimate[2]
   
   kt_results_10$pval_10[i] <- ktau$p.value[2]
-  }  
-
-kt_results_10 <- kt_results_10 %>% 
+} 
+  kt_results_10 <- kt_results_10 %>% 
   na.omit()
-
+  
+} else{
+  kt_results_10 <- data.frame(matrix(ncol = 3, nrow = 1))
+  x <- c("FULL_CHARACTERISTIC_NAME", "slope_10", "pval_10")
+  colnames(kt_results_10) <- x
+}
 
 owi_withplots <- left_join(owi_withplots, kt_results, by = "FULL_CHARACTERISTIC_NAME")
 owi_withplots <- left_join(owi_withplots, kt_results_10, by = "FULL_CHARACTERISTIC_NAME")
+
+#tn:tp
+ 
+tntp <- lake1 %>% 
+  filter(Characteristic.Name == "PHOSPHORUS" & INFO_TYPE == "OW" & Result.Sample.Fraction == "T" |
+           Characteristic.Name == "NITROGEN, TOTAL" & INFO_TYPE == "OW" & Result.Sample.Fraction == "T") %>% 
+  mutate(month = month(SAMPLE_DATE)) 
+
+tntp_10 <- tntp %>% 
+  filter(year > (as.numeric(report_year) - 10)) %>% 
+  select(SAMPLE_ID, Characteristic.Name, Result.Value, year, month) %>% 
+  na.omit() %>% 
+  group_by(SAMPLE_ID, Characteristic.Name, year, month) %>% 
+  summarize(Result.Value = mean(as.numeric(Result.Value))) %>% 
+  ungroup() %>% 
+  spread(Characteristic.Name, Result.Value) %>% 
+  na.omit() %>% 
+  mutate(TNTP = as.numeric(PHOSPHORUS)/as.numeric(`NITROGEN, TOTAL`))
+
+
+tntp <- tntp %>% 
+  select(SAMPLE_ID, Characteristic.Name, Result.Value, year, month) %>% 
+  na.omit() %>% 
+  group_by(SAMPLE_ID, Characteristic.Name, year, month) %>% 
+  summarize(Result.Value = mean(as.numeric(Result.Value))) %>% 
+  ungroup() %>% 
+  spread(Characteristic.Name, Result.Value) %>% 
+  na.omit() %>% 
+  mutate(TNTP = as.numeric(PHOSPHORUS)/as.numeric(`NITROGEN, TOTAL`))
+
+
+#run kendall tau only if num of data pairs > 3
+
+tntp_list <- tntp %>% 
+  select(month, year) %>% 
+  unique() %>% 
+  group_by(month) %>% 
+  dplyr::summarize(n_years = n()) %>% 
+  filter(n_years > 1) %>% 
+  ungroup() %>% 
+  dplyr::summarize(num_pairs = n()) %>% 
+  filter(num_pairs > 2) %>% 
+  ungroup()
+
+
+tntp_list_10 <- tntp_10 %>% 
+  select(month, year) %>% 
+  unique() %>% 
+  group_by(month) %>% 
+  dplyr::summarize(n_years = n()) %>% 
+  filter(n_years > 1) %>% 
+  ungroup() %>% 
+  dplyr::summarize(num_pairs = n()) %>% 
+  filter(num_pairs > 2) %>% 
+  ungroup()
+
+
+if(nrow(tntp_list) > 0){
+  tntp_kt <- kendallSeasonalTrendTest(as.numeric(TNTP)~as.numeric(month)+as.numeric(year), data=tntp)
+  owi_withplots$slope_lg[owi_withplots$FULL_CHARACTERISTIC_NAME == "TN:TP"] <- tntp_kt$estimate[2]
+  owi_withplots$pval_lg[owi_withplots$FULL_CHARACTERISTIC_NAME == "TN:TP"] <- tntp_kt$p.value[2]
+}
+
+if(nrow(tntp_list_10) > 0){
+  tntp_kt_10 <- kendallSeasonalTrendTest(as.numeric(TNTP)~as.numeric(month)+as.numeric(year), data=tntp_10)
+  owi_withplots$slope_10[owi_withplots$FULL_CHARACTERISTIC_NAME == "TN:TP"] <- tntp_kt_10$estimate[2]
+  owi_withplots$pval_10[owi_withplots$FULL_CHARACTERISTIC_NAME == "TN:TP"] <- tntp_kt_10$p.value[2]
+}
 
 owi_withplots$longterm_trend <- 0
 owi_withplots$tenyear_trend <- 0
@@ -507,9 +532,9 @@ for(i in 1:nrow(owi_withplots)){
   else if(owi_withplots$pval_10[i] <= 0.01 & owi_withplots$slope_10[i] > 0){
     owi_withplots$tenyear_trend[i] <- "C:/Users/amtweitm/OneDrive - New York State Office of Information Technology Services/Documents/R/CSLAP_reporting/images/two_up_arrow.png"}
   else if(owi_withplots$pval_10[i] <= 0.05 & owi_withplots$pval_10[i] > 0.01 & owi_withplots$slope_10[i] < 0){
-    owi_withplots$tenyear_trend[i] <- "C:/Users/amtweitm/OneDrive - New York State Office of Information Technology Services/Documents/R/CSLAP_reporting/images/one_up_arrow.png"}
+    owi_withplots$tenyear_trend[i] <- "C:/Users/amtweitm/OneDrive - New York State Office of Information Technology Services/Documents/R/CSLAP_reporting/images/one_down_arrow.png"}
   else if(owi_withplots$pval_10[i] <= 0.01 & owi_withplots$slope_10[i] < 0){
-    owi_withplots$tenyear_trend[i] <- "C:/Users/amtweitm/OneDrive - New York State Office of Information Technology Services/Documents/R/CSLAP_reporting/images/two_up_arrow.png"}
+    owi_withplots$tenyear_trend[i] <- "C:/Users/amtweitm/OneDrive - New York State Office of Information Technology Services/Documents/R/CSLAP_reporting/images/two_down_arrow.png"}
   else{owi_withplots$tenyear_trend[i] <- "C:/Users/amtweitm/OneDrive - New York State Office of Information Technology Services/Documents/R/CSLAP_reporting/images/no.png"}
 }
 
@@ -521,9 +546,9 @@ for(i in 1:nrow(owi_withplots)){
   else if(owi_withplots$pval_lg[i] <= 0.01 & owi_withplots$slope_lg[i] > 0){
     owi_withplots$longterm_trend[i] <- "C:/Users/amtweitm/OneDrive - New York State Office of Information Technology Services/Documents/R/CSLAP_reporting/images/two_up_arrow.png"}
   else if(owi_withplots$pval_lg[i] <= 0.05 & owi_withplots$pval_lg[i] > 0.01 & owi_withplots$slope_lg[i] < 0){
-    owi_withplots$longterm_trend[i] <- "C:/Users/amtweitm/OneDrive - New York State Office of Information Technology Services/Documents/R/CSLAP_reporting/images/one_up_arrow.png"}
+    owi_withplots$longterm_trend[i] <- "C:/Users/amtweitm/OneDrive - New York State Office of Information Technology Services/Documents/R/CSLAP_reporting/images/one_down_arrow.png"}
   else if(owi_withplots$pval_lg[i] <= 0.01 & owi_withplots$slope_lg[i] < 0){
-   owi_withplots$longterm_trend[i] <- "C:/Users/amtweitm/OneDrive - New York State Office of Information Technology Services/Documents/R/CSLAP_reporting/images/two_up_arrow.png"}
+   owi_withplots$longterm_trend[i] <- "C:/Users/amtweitm/OneDrive - New York State Office of Information Technology Services/Documents/R/CSLAP_reporting/images/two_down_arrow.png"}
   else{owi_withplots$longterm_trend[i] <- "C:/Users/amtweitm/OneDrive - New York State Office of Information Technology Services/Documents/R/CSLAP_reporting/images/no.png"}
 }
 
@@ -540,9 +565,9 @@ make_table <- owi_withplots %>%
     columns=vars(list_of_dates)) %>% 
   cols_label(DISPLAY_NAME = "Open Water Indicators",
              seasonal.change = "Seasonal Change",
-             Longterm_Avg = "Longterm Avg",
-             Season_Avg = "Season Avg",
-             TenYear_Avg = "Decadal Average",
+             Longterm_Avg = "Longterm Median",
+             Season_Avg = "Season Median",
+             TenYear_Avg = "Decadal Median",
              longterm_trend = "Longterm Trend?",
              tenyear_trend = "Decadal Trend?") %>% 
   cols_move_to_end(columns = vars(Longterm_Avg, longterm_trend)) %>% 
@@ -592,7 +617,7 @@ for(i in 1:nrow(owi_withplots)) {
   else if(owi_withplots$FULL_CHARACTERISTIC_NAME[i] == "PHOSPHORUS OW T"){
     for(j in 1:length(list_of_dates)){
       if(is.na(owi_withplots[i,j+1])){}
-      else if(as.numeric(owi_withplots[i,j+1]) >= 20){
+      else if(as.numeric(owi_withplots[i,j+1]) >= 0.02){
         make_table <- make_table %>%
           tab_style(style = cell_fill(color = "red", alpha = 0.5),
                    locations = cells_body(columns = j+1, rows = i))

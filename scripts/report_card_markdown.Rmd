@@ -5,8 +5,6 @@ editor_options:
     wrap: 72
 ---
 
-### `r titles[1]` -- Lake Scorecard
-
 ```{r report_card, echo=FALSE, message=FALSE, warning=FALSE}
 #creating blank scorecard
 water_quality_indicators <- c("Phosphorus", "Chlorophyll A", "Secchi", "Lake Perception", "Harmful Algal Blooms", "Open Water Algae Levels")
@@ -29,37 +27,21 @@ trophic_df <- trophic_df %>%
                                          "CHLOROPHYLL A OW T"
                                          ))
 
-for(i in 1:nrow(trophic_df)){
-  if(trophic_df$SAMPLE_DATE[i] >= as.Date(paste(year(trophic_df$SAMPLE_DATE[i]), 07, 15, sep = "-")) & trophic_df$SAMPLE_DATE[i] <= as.Date(paste(year(trophic_df$SAMPLE_DATE[i]), 09, 15, sep = "-"))){
-    trophic_df$season[i] <- "productivity"
-  } else if(trophic_df$SAMPLE_DATE[i] >= as.Date(paste(year(trophic_df$SAMPLE_DATE[i]), 06, 1, sep = "-")) & trophic_df$SAMPLE_DATE[i] <= as.Date(paste(year(trophic_df$SAMPLE_DATE[i]), 07, 14, sep = "-"))){
-    trophic_df$season[i] <- "summer"
-  } else if(trophic_df$SAMPLE_DATE[i] >= as.Date(paste(year(trophic_df$SAMPLE_DATE[i]), 09, 15, sep = "-")) & trophic_df$SAMPLE_DATE[i] <= as.Date(paste(year(trophic_df$SAMPLE_DATE[i]), 10, 1, sep = "-"))){
-    trophic_df$season[i] <- "summer"
-  } else {
-   trophic_df$season[i] <- "not"
-  }
-}
 
 trophic_df$Result.Value <- as.numeric(trophic_df$Result.Value)
 
 trophic_df <- trophic_df %>% 
-  filter(season != "not") %>% 
-   filter(!is.na(Result.Value)) %>% 
-  group_by(FULL_CHARACTERISTIC_NAME, year, season) %>% 
-  dplyr::summarize(avg_result_s = mean(Result.Value)) %>% 
-  ungroup() %>% 
-  group_by(FULL_CHARACTERISTIC_NAME, year) %>%
-  dplyr::summarize(avg_result = mean(avg_result_s))
+  filter(!is.na(Result.Value)) %>% 
+  group_by(FULL_CHARACTERISTIC_NAME, year) %>% 
+  dplyr::summarize(avg_result = median(Result.Value))
 
 thisyear <-  trophic_df  %>% 
   filter(year == report_year) %>% 
   rename(this_year = avg_result)
 
 allyear  <-  trophic_df  %>% 
-  filter(year != report_year) %>% 
   group_by(FULL_CHARACTERISTIC_NAME) %>% 
-  dplyr::summarize(Longterm_Avg = mean(avg_result))
+  dplyr::summarize(Longterm_Avg = median(avg_result))
 
 trophic_dt <- full_join(thisyear, allyear) %>% 
   select(!year)
@@ -189,7 +171,7 @@ lake_percep_alltime <- lake_percep %>%
   mutate(freq_bad = bad_count/total_obs) %>% 
   filter(year != report_year) %>% 
   group_by(Characteristic.Name) %>% 
-  dplyr::summarize(freq_bad = mean(freq_bad))
+  dplyr::summarize(freq_bad = median(freq_bad))
 
 if(max(lake_percep_thisyear$freq_bad) > 0.5){
       scorecard$this_year_grade[4] <- "Poor"
@@ -211,7 +193,7 @@ if(max(lake_percep_alltime$freq_bad) > 0.5){
 ###Harmful Algal Blooms
 #More than 1 HAB Notification (NYHABs): No notifications “Good”, default based on a) or b) to “Fair” or “Poor”
 
-nyhabs_df<-lake1 %>% 
+nyhabs_df<-habs_lake1 %>% 
   filter(STATUS%in%c("CONFIRMED","CONFIRMED WITH HIGH TOXINS")) %>% 
   group_by(year) %>% 
   dplyr::summarize(num_year = n())
@@ -347,7 +329,7 @@ extract_chla_freq_allyear <- extract_chla_freq %>%
   mutate(freq = count_bad/count_all) %>% 
   filter(year < report_year)
 
-extract_chla_freq_allyear <-mean(extract_chla_freq_allyear$freq)
+extract_chla_freq_allyear <-median(extract_chla_freq_allyear$freq)
 
 if(is.na(extract_chla_freq_allyear)){
   extract_chla_freq_allyear <- 0
@@ -455,7 +437,13 @@ for(i in 1:nrow(scorecard)){
 
 
 lake_info <- read.csv(file = "C:/Users/amtweitm/OneDrive - New York State Office of Information Technology Services/Documents/R/CSLAP_reporting/data/lake_info.csv") %>% 
-  filter(LakeID == ids)
+  rename(Lake_ID = 1) %>% 
+  filter(Lake_ID == ids)
+
+if(multisite_var == 1){
+  lake_info <- lake_info %>% 
+  filter(Location_ID == loc_id)
+}
 
 if(lake_info$Invasive.Animals.[1] %in% c(NA, "none reported", "")){
   inv_animals <- 0
@@ -502,46 +490,3 @@ make_inv_scorecard
 
 ```
 
-# Water Quality Assessments 
-
-The Waterbody Inventory/Priority Waterbodies List (WI/PWL) is a
-statewide inventory of New York's water resources that is used to track
-a waters ability to support its' best use(s), identify pollutant(s)
-causing impairment of best use(s), and follow the status of restoration,
-protection and other water quality activities and efforts. Data
-collected through CSLAP contributes to the WI/PWL. In order to be
-included as an assessment unit in the WI/PWL, a lake, pond, or reservoir
-must be at least 6.4 acres in size. To view current water quality
-assessment results:
-
--   Visit <https://www.dec.ny.gov/pubs/109457.html> - follow the link to
-    launch the DECinfo Locator
-
--   Search for waterbody name, address or nearby landmark in the search
-    tool at the top of the left banner
-
--   Click and Expand the 'DEC Information Layers' tab of the left banner
-    o Click and expand the 'Environmental Monitoring' tab of the left
-    banner
-
--   Check the 'Lakes and Reservoirs' layer
-
--   Click on the waterbody of interest in the map view to display a
-    pop-up with more information about the waterbody
-
--   Follow the 'Fact Sheet' link in the pop-up to learn more about the
-    current use assessment of the waterbody
-
-# Lake Stewardship Actions 
-
-Individual stewardship activities can help improve water quality:
-maintain your septic system, reduce fertilizer use, grow a buffer of
-native plants next to the lake shore, and reduce shoreline erosion and
-runoff into the lake. Visiting boats should be inspected to prevent the
-spread of invasive species, and continued community education about and
-monitoring for invasive species is recommended. Routine education about
-algae and harmful algal blooms (HABs) within your lake community is
-recommended; to learn more about HABs and see examples of HABs visit
-<http://www.dec.ny.gov/chemical/81962.html>. Occurrences of HABs can be
-reported to NYSDEC. For more information on keeping New York waters
-clean, visit <http://www.dec.ny.gov/public/43661.html>.

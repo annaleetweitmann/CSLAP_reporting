@@ -4,7 +4,7 @@ output: html_document
 
 ### NYHABs notifications
 ```{r yes-no, echo=FALSE, message=FALSE, warning=FALSE}
-listing_df<-lake1 %>% 
+listing_df<-habs_lake1 %>% 
   filter(year == report_year) %>% 
   filter(STATUS%in%c("CONFIRMED","CONFIRMED WITH HIGH TOXINS")) %>% 
   mutate(STATUS_CODE=as.factor(STATUS)) %>% 
@@ -162,4 +162,4 @@ make_habs_sample_table
 
 
 ```
-`r if(ncol(sb_table) <= 3){"There were no shoreline HAB samples taken this season."}`
+### `r if(ncol(sb_table) <= 3){"There were no shoreline HAB samples taken this season."}`

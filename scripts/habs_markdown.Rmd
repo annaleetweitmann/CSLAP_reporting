@@ -1,0 +1,325 @@
+---
+output: html_document
+---
+
+### NYHABs notifications
+```{r yes-no, echo=FALSE, message=FALSE, warning=FALSE}
+listing_df<-habs_lake1 %>% 
+  filter(year == report_year) %>% 
+  filter(STATUS%in%c("CONFIRMED","CONFIRMED WITH HIGH TOXINS")) %>% 
+  mutate(STATUS_CODE=as.factor(STATUS)) %>% 
+  mutate(STATUS_CODE=recode(STATUS_CODE,"NO BLOOM"=0,"SUSPICIOUS"=1,"CONFIRMED"=2,"CONFIRMED WITH HIGH TOXINS"=3)) %>%
+  mutate(STATUS_CODE=as.numeric(STATUS_CODE)) %>% 
+  dplyr::summarise(Date_First_Listing=min(SAMPLE_DATE),
+            Date_Last_Listing=max(SAMPLE_DATE),
+            Number_of_Reports =n()) %>% 
+    ungroup()
+
+listing_df$Date_First_Listing <- format(as.Date(listing_df$Date_First_Listing, format = "%Y/%m/%d"), "%m/%d/%Y")
+listing_df$Date_Last_Listing <- format(as.Date(listing_df$Date_Last_Listing, format = "%Y/%m/%d"), "%m/%d/%Y")
+
+if(listing_df$Number_of_Reports[1] > 0){
+habs_reports_yn <- "Yes"
+} else{
+habs_reports_yn <- "No"
+}
+
+```
+
+#### Were there any reported HABs this season? **`r habs_reports_yn[1]`.**
+
+
+```{r habs-table, echo=FALSE, message=FALSE, warning=FALSE}
+
+if(habs_reports_yn == "Yes"){
+make_habs_table <- listing_df %>% 
+  gt() %>% 
+  cols_label(Date_First_Listing = "Date of First Listing",
+             Date_Last_Listing = "Date of Last Listing",
+             Number_of_Reports = "Number of Reports") %>% 
+  fmt_missing(
+    columns=vars(Date_First_Listing, Date_Last_Listing),
+    missing_text = "Not Listed") %>% 
+  fmt_missing(
+    columns=vars(Number_of_Reports),
+    missing_text = " ")
+
+make_habs_table
+}
+
+```
+
+### Shoreline HAB Sample Dates `r report_year[1]`
+
+```{r habs-sample-data, echo=FALSE, message=FALSE, warning=FALSE}
+sb_df <- lake1 %>% 
+  filter(year == report_year) %>% 
+  filter(INFO_TYPE == "SB") %>% 
+  filter(Characteristic.Name %in% c("DOMINANT ALGAL SPECIES", "MICROCYSTIN", "CHLOROPHYLL A (PROBE) CONCENTRATION, CYANOBACTERIA (BLUEGREEN)")) %>% 
+  mutate(SAMPLE_DATE_SHORT = substring(SAMPLE_DATE, first = 6, last = 10)) %>% 
+  select(SAMPLE_DATE_SHORT, Characteristic.Name, Result.Value) %>% 
+  na.omit() %>% 
+  distinct()
+
+dominant <- sb_df %>% 
+  filter(Characteristic.Name == "DOMINANT ALGAL SPECIES") %>% 
+  separate_rows(Result.Value, sep = ",")
+
+dominant$Result.Value <- str_trim(dominant$Result.Value, side = c("both"))
+
+dominant$Result.Value <- capitalize(dominant$Result.Value)
+
+
+dominant <- dominant %>% 
+  unique() %>% 
+  group_by(SAMPLE_DATE_SHORT, Characteristic.Name) %>%
+  dplyr::summarise(Result.Value = toString(Result.Value)) %>%
+  ungroup()
+
+
+sb_df2 <- sb_df %>% 
+  filter(Characteristic.Name != "DOMINANT ALGAL SPECIES") %>% 
+  group_by(SAMPLE_DATE_SHORT, Characteristic.Name) %>% 
+  dplyr::summarize(Result.Value = max(Result.Value))
+
+all_sb_df <- rbind(dominant, sb_df2)
+
+list_of_dates <- sb_df2$SAMPLE_DATE_SHORT %>% 
+  unique()
+
+Characteristic.Name <- c("CHLOROPHYLL A (PROBE) CONCENTRATION, CYANOBACTERIA (BLUEGREEN)", "MICROCYSTIN", "DOMINANT ALGAL SPECIES")
+Criteria <- c("25 ug/L", "20 ug/L", "Dominant")
+
+order <- data.frame(Characteristic.Name, Criteria)
+
+sb_table_unordered <- all_sb_df %>% 
+  spread(SAMPLE_DATE_SHORT, Result.Value)
+
+sb_table <- left_join(order, sb_table_unordered)
+
+sb_table$Display_Name[sb_table$Characteristic.Name == "CHLOROPHYLL A (PROBE) CONCENTRATION, CYANOBACTERIA (BLUEGREEN)"] <- "FP BGA Chl. a"
+sb_table$Display_Name[sb_table$Characteristic.Name == "MICROCYSTIN"] <- "Microcystin" 
+sb_table$Display_Name[sb_table$Characteristic.Name == "DOMINANT ALGAL SPECIES"] <- "Microscopy" 
+
+
+for(i in 1:2){
+  for(j in 1:length(list_of_dates)){
+    if(check.numeric(sb_table[i,j+2])){
+      sb_table[i,j+2] <- round(as.numeric(sb_table[i,j+2]), 2)
+    } else {}
+  }
+}
+
+
+
+make_habs_sample_table <- sb_table %>% 
+  gt() %>% 
+  cols_label(Display_Name = "HAB Indicators") %>% 
+  fmt_missing(columns= everything(),
+               missing_text = " ") %>% 
+  cols_hide(columns = vars(Characteristic.Name)) %>% 
+  cols_move_to_start(vars(Display_Name))
+
+
+if(length(list_of_dates) > 0){
+  
+for(i in 1:nrow(sb_table)) {
+  
+  if(sb_table$Characteristic.Name[i] == "CHLOROPHYLL A (PROBE) CONCENTRATION, CYANOBACTERIA (BLUEGREEN)"){
+    
+    for(j in 1:length(list_of_dates)){
+      if(is.na(sb_table[i,j+2])){}
+      else if(sb_table[i,j+2] == "ND"){}
+      else if(as.numeric(sb_table[i,j+2]) > 25){
+        make_habs_sample_table <- make_habs_sample_table %>%
+          tab_style(style = cell_fill(color = "red", alpha = 0.5),
+                   locations = cells_body(columns = j+2, rows = i))
+      }
+      
+      else{}
+      
+      }
+  }
+  else if(sb_table$Characteristic.Name[i] == "MICROCYSTIN"){
+    for(j in 1:length(list_of_dates)){
+     if(is.na(sb_table[i,j+2])){}
+      else if(sb_table[i,j+2] == "ND"){}
+      else if(as.numeric(sb_table[i,j+2]) > 20){
+         make_habs_sample_table <- make_habs_sample_table %>%
+          tab_style(style = cell_fill(color = "red", alpha = 0.5),
+                   locations = cells_body(columns = j+2, rows = i))
+      }
+      else{}
+      }
+  }
+  else{}
+}
+  
+make_habs_sample_table
+}
+
+
+
+
+```
+#### `r if(ncol(sb_table) <= 3){"There were no shoreline HAB samples taken this season."}`
+
+### Openwater Algae
+
+```{r open-water-algae, echo=FALSE, message=FALSE, warning=FALSE}
+ow_algtype <- lake1 %>% 
+  filter(Characteristic.Name == "CHLOROPHYLL A (PROBE) CONCENTRATION, DINOPHYTA (DIATOMS)" |
+          Characteristic.Name == "CHLOROPHYLL A (PROBE) CONCENTRATION, CHRYSOPHYTA (BROWN ALGAE)" |
+          Characteristic.Name == "CHLOROPHYLL A (PROBE) CONCENTRATION, CYANOBACTERIA (BLUEGREEN)" |
+          Characteristic.Name == "CHLOROPHYLL A (PROBE) CONCENTRATION, CHLOROPHYTE (GREEN ALGAE)" |
+          Characteristic.Name == "CHLOROPHYLL A (PROBE) CONCENTRATION, CRYPTOPHYTA (CRYPTOPHYTES)") %>%   filter(INFO_TYPE == "OW") %>% 
+  filter(year == report_year)
+
+ow_algtype$Result.Value <- as.numeric(ow_algtype$Result.Value)
+
+may1<-as.Date(paste(report_year,"5","1",sep="-"))
+june1 <- as.Date(paste(report_year,"6","1",sep="-"))
+july1<- as.Date(paste(report_year,"7","1",sep="-"))
+aug1<- as.Date(paste(report_year,"8","1",sep="-"))
+sept1<- as.Date(paste(report_year,"9","1",sep="-"))
+oct1<- as.Date(paste(report_year,"10","1",sep="-"))
+nov1<- as.Date(paste(report_year,"11","1",sep="-"))
+nov15<- as.Date(paste(report_year,"11","15",sep="-"))
+
+if(nrow(ow_algtype) != 0){
+ggplot(ow_algtype, aes(fill=Characteristic.Name, y=Result.Value, x=SAMPLE_DATE)) + 
+    geom_bar(position="stack", stat="identity") +
+  xlab("") +
+  ylab("Chlorophyll a (ug/L)") +
+  labs(title="Open Water Algae Samples") +
+  scale_x_continuous(limits=c(may1,nov15),
+                     breaks=c(may1,june1,july1,aug1,sept1,oct1, nov1), 
+                     labels = c("May 1", "June 1", "July 1", "Aug 1", "Sept 1", "Oct 1", "Nov 1")) +
+  scale_y_continuous(expand = c(0,0), labels = scales::label_comma()) +
+  theme_classic() +
+  scale_fill_manual(labels = c("Green Algae", "Other Algae", "BG Algae", "Diatoms", "Brown Algae"),
+                      values = c("green", "red", "blue", "grey", "brown"),
+                    name="")
+}
+
+
+
+ow_microcystin <- lake1 %>% 
+  filter(Characteristic.Name == "MICROCYSTIN") %>% 
+  filter(INFO_TYPE == "OW") %>% 
+  filter(year == report_year) %>% 
+  distinct(SAMPLE_NAME, Result.Value, Characteristic.Name, .keep_all = TRUE) %>% 
+  filter(as.numeric(Result.Value) != "NA")
+
+
+cutoff <- as.Date(paste(report_year,"7","06",sep="-"))
+cutoff2 <- as.Date(paste(report_year,"6","24",sep="-"))
+arrow_loc <-as.Date(paste(report_year,"5","1",sep="-"))
+
+
+yaxis <- max(max(as.numeric(ow_microcystin$Result.Value)) * 10, 100)
+
+if(nrow(ow_microcystin) != 0){
+    ggplot(data=ow_microcystin) +
+    geom_point(aes(x=SAMPLE_DATE, y=as.numeric(Result.Value)), shape=18, size=3) +
+    labs(title="Open Water Toxin Levels", x="", y="Total Microcystin (ug/L)") +
+    scale_y_continuous(labels = scales::label_comma(), limits=c(0.1,yaxis), expand = c(0,0), trans='log10') +
+    annotate(geom="label", x=cutoff2, y=2, label="Below NYSDOH Recreation Level of Concern",
+              color="black", alpha=0.9) +
+    annotate(geom="label", x=cutoff, y=20, label="Openwater NYSDEC Confirmed With High Toxins Bloom",
+              color="black", alpha=0.9) +
+    annotate("segment", x = arrow_loc, xend = arrow_loc, y = 16, yend = 70, arrow=arrow()) +
+    annotate("segment", x = arrow_loc, xend = arrow_loc, y = 2.5, yend = 0.5, arrow=arrow()) +
+    theme_classic() +
+    scale_x_continuous(limits=c(may1,nov1),
+                     breaks=c(may1,june1,july1,aug1,sept1,oct1, nov1), 
+                     labels = c("May 1", "June 1", "July 1", "Aug 1", "Sept 1", "Oct 1", "Nov 1")) +
+    geom_hline(yintercept = 4, linetype="dashed") +
+    geom_hline(yintercept = 10, linetype="dashed")
+}
+  
+  
+
+
+```
+
+### Shoreline Algae
+
+```{r shoreline-algae, echo=FALSE, message=FALSE, warning=FALSE}
+
+s_algtype <- lake1 %>% 
+  filter(Characteristic.Name == "CHLOROPHYLL A (PROBE) CONCENTRATION, DINOPHYTA (DIATOMS)" |
+        Characteristic.Name == "CHLOROPHYLL A (PROBE) CONCENTRATION, CHRYSOPHYTA (BROWN ALGAE)" |
+        Characteristic.Name == "CHLOROPHYLL A (PROBE) CONCENTRATION, CYANOBACTERIA (BLUEGREEN)" |
+        Characteristic.Name == "CHLOROPHYLL A (PROBE) CONCENTRATION, CHLOROPHYTE (GREEN ALGAE)" |
+        Characteristic.Name == "CHLOROPHYLL A (PROBE) CONCENTRATION, CRYPTOPHYTA (CRYPTOPHYTES)") %>%   filter(INFO_TYPE == "SB") %>% 
+  filter(year == report_year)
+
+s_algtype$Result.Value <- as.numeric(s_algtype$Result.Value)
+
+may1<-as.Date(paste(report_year,"5","1",sep="-"))
+june1 <- as.Date(paste(report_year,"6","1",sep="-"))
+july1<- as.Date(paste(report_year,"7","1",sep="-"))
+aug1<- as.Date(paste(report_year,"8","1",sep="-"))
+sept1<- as.Date(paste(report_year,"9","1",sep="-"))
+oct1<- as.Date(paste(report_year,"10","1",sep="-"))
+nov1<- as.Date(paste(report_year,"11","1",sep="-"))
+nov15<- as.Date(paste(report_year,"11","15",sep="-"))
+
+s_algtype$Characteristic.Name <- as.factor(s_algtype$Characteristic.Name)
+
+
+if(nrow(s_algtype) != 0){
+  
+ggplot(s_algtype, aes(fill=Characteristic.Name, y=Result.Value, x=SAMPLE_DATE)) + 
+    geom_bar(position="stack", stat="identity") +
+  xlab("") +
+  ylab("Chlorophyll a (ug/L)") +
+  labs(title="Shoreline Algae Samples") +
+  scale_x_continuous(limits=c(may1,nov15),
+                     breaks=c(may1,june1,july1,aug1,sept1,oct1,nov1), 
+                     labels = c("May 1", "June 1", "July 1", "Aug 1", "Sept 1", "Oct 1", "Nov 1")) +
+  scale_y_continuous(expand = c(0,0), labels = scales::label_comma()) +
+  theme_classic() +
+  scale_fill_manual(labels = c("Green Algae", "Other Algae", "BG Algae", "Diatoms", "Brown Algae"),
+                      values = c("green", "red", "blue", "grey", "brown"),
+                    name="")
+}
+
+s_microcystin <- lake1 %>% 
+  filter(Characteristic.Name == "MICROCYSTIN") %>% 
+  filter(INFO_TYPE == "SB") %>% 
+  filter(year == report_year) %>% 
+  distinct(SAMPLE_NAME, Result.Value, .keep_all = TRUE) %>% 
+  filter(as.numeric(Result.Value) != "NA")
+
+s_microcystin$Result.Value <- as.numeric(s_microcystin$Result.Value)
+
+cutoff <- as.Date(paste(report_year,"7","04",sep="-"))
+cutoff2 <- as.Date(paste(report_year,"6","24",sep="-"))
+arrow_loc <-as.Date(paste(report_year,"5","1",sep="-"))
+
+
+yaxis <- max(max(as.numeric(ow_microcystin$Result.Value)) * 10, 100)
+
+if(nrow(s_microcystin) != 0){
+  ggplot(data=s_microcystin) +
+  geom_point(aes(x=SAMPLE_DATE, y=as.numeric(Result.Value)), shape=18, size=3, color="grey47") +
+  labs(title="Shoreline Toxin Levels", x="", y="Total Microcystin (ug/L)") +
+  geom_hline(yintercept = 4, linetype="dashed") +
+  geom_hline(yintercept = 20, linetype="dashed") +
+  scale_y_continuous(labels = scales::label_comma(), limits=c(0.1,yaxis), expand = c(0,0), trans='log10') +
+  annotate(geom="label", x=cutoff2, y=2, label="Below NYSDOH Recreation Level of Concern",
+              color="black", alpha=0.9) +
+  annotate(geom="label", x=cutoff, y=30, label="Shoreline NYSDEC Confirmed With High Toxins Bloom",
+              color="black", alpha=0.9) +
+  annotate("segment", x = arrow_loc, xend = arrow_loc, y = 24, yend = 90, arrow=arrow()) +
+  annotate("segment", x = arrow_loc, xend = arrow_loc, y = 2.5, yend = 0.5, arrow=arrow()) +
+  theme_classic() +
+  scale_x_continuous(limits=c(may1,nov1),
+                     breaks=c(may1,june1,july1,aug1,sept1,oct1, nov1), 
+                     labels = c("May 1", "June 1", "July 1", "Aug 1", "Sept 1", "Oct 1", "Nov 1"))
+  }
+  
+```
+

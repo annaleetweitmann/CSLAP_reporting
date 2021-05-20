@@ -5,11 +5,21 @@ output: html_document
 ```{r header-creation, echo=FALSE, message=FALSE, warning=FALSE}
 
 watershed_info <- read.csv(file = "C:/Users/amtweitm/OneDrive - New York State Office of Information Technology Services/Documents/R/CSLAP_reporting/data/watershed_info.csv") %>% 
+  rename(Lake_ID = 1) %>% 
   filter(Lake_ID == ids)
-lake_info <- read.csv(file = "C:/Users/amtweitm/OneDrive - New York State Office of Information Technology Services/Documents/R/CSLAP_reporting/data/lake_info.csv") %>% 
-  filter(LakeID == ids)
 
-lake_watershed_info <- full_join(watershed_info, lake_info, by = c("Lake_ID" = "LakeID"))
+
+lake_info <- read.csv(file = "C:/Users/amtweitm/OneDrive - New York State Office of Information Technology Services/Documents/R/CSLAP_reporting/data/lake_info.csv") %>% 
+  rename(Lake_ID = 1) %>% 
+  filter(Lake_ID == ids)
+
+if(multisite_var == 1){
+  lake_info <- lake_info %>% 
+  filter(Location_ID == loc_id)
+}
+
+
+lake_watershed_info <- left_join(lake_info, watershed_info, by = c("Lake_ID" = "Lake_ID", "Location_ID" = "Location_ID"))
 
 
 if(nrow(lake_watershed_info)>0){
@@ -78,7 +88,7 @@ characteristic_df$values[12] <- lake_watershed_info$Residential[1]
 characteristic_df$values[13] <- lake_watershed_info$Urban[1]
 characteristic_df$values[14] <- lake_watershed_info$Sampling.Years[1]
 ###make this a variable so it doesn't have to be changed every year
-characteristic_df$values[15] <- lake_watershed_info$X18.Samplers[1]
+characteristic_df$values[15] <- lake_watershed_info$X20.samplers[1]
 
 make_char_table <- characteristic_df %>% 
   gt() %>% 
@@ -267,6 +277,69 @@ if(invasives > 0){
 
 assess_df$inv_vuln <- paste(invasives_present, inv_vulnerability, sep="")
 
+lake_watershed_info <- lake_watershed_info %>% 
+  replace_na(list(PotableWater.PWL = "Not Applicable",
+                  Bathing..PWL = "Not Applicable",
+                  Recreation.PWL = "Not Applicable",
+                  AquaticLife.PWL = "Not Applicable",
+                  FishConsumption.PWL = "Not Applicable"))
+
+if(lake_watershed_info$PotableWater.PWL[1] == "Impaired" |
+   lake_watershed_info$Bathing..PWL[1] == "Impaired" |
+   lake_watershed_info$Recreation.PWL[1] == "Impaired" |
+   lake_watershed_info$AquaticLife.PWL[1] == "Impaired" |
+   lake_watershed_info$FishConsumption.PWL[1] == "Impaired"){
+          assess_df$pwl_assess[1] <- "Impaired"
+} else if(lake_watershed_info$PotableWater.PWL[1] == "Stressed" |
+   lake_watershed_info$Bathing..PWL[1] == "Stressed" |
+   lake_watershed_info$Recreation.PWL[1] == "Stressed" |
+   lake_watershed_info$AquaticLife.PWL[1] == "Stressed" |
+   lake_watershed_info$FishConsumption.PWL[1] == "Stressed"){
+          assess_df$pwl_assess[1] <- "Stressed"
+} else if(lake_watershed_info$PotableWater.PWL[1] == "Threatened" |
+   lake_watershed_info$Bathing..PWL[1] == "Threatened" |
+   lake_watershed_info$Recreation.PWL[1] == "Threatened" |
+   lake_watershed_info$AquaticLife.PWL[1] == "Threatened" |
+   lake_watershed_info$FishConsumption.PWL[1] == "Threatened"){
+          assess_df$pwl_assess[1] <- "Threatened"
+} else if(lake_watershed_info$PotableWater.PWL[1] == "Fully Supported" |
+   lake_watershed_info$Bathing..PWL[1] == "Fully Supported" |
+   lake_watershed_info$Recreation.PWL[1] == "Fully Supported" |
+   lake_watershed_info$AquaticLife.PWL[1] == "Fully Supported" |
+   lake_watershed_info$FishConsumption.PWL[1] == "Fully Supported"){
+          assess_df$pwl_assess[1] <- "Fully Supported"
+} else{
+          assess_df$pwl_assess[1] <- "Unassessed"
+}
+
+###HABS
+if(chla > 20){
+  habs_susceptibility <-  "High susceptibility"
+} else if(tphos > 0.02){
+  habs_susceptibility <-  "Moderate susceptibility"
+} else if(chla > 10){
+  habs_susceptibility <-  "Moderate susceptibility"
+} else{
+  habs_susceptibility <-  "Low susceptibility"
+}
+
+listing_df<-lake1 %>% 
+  filter(STATUS%in%c("CONFIRMED","CONFIRMED WITH HIGH TOXINS")) %>% 
+  mutate(STATUS_CODE=as.factor(STATUS)) %>% 
+  mutate(STATUS_CODE=recode(STATUS_CODE,"NO BLOOM"=0,"SUSPICIOUS"=1,"CONFIRMED"=2,"CONFIRMED WITH HIGH TOXINS"=3)) %>%
+  mutate(STATUS_CODE=as.numeric(STATUS_CODE)) %>% 
+  dplyr::summarise(Number_of_Reports =n()) %>% 
+    ungroup()
+
+if(listing_df[1] == 0){
+  bloom_reports <- "No Reported Blooms"
+} else if(listing_df[1] > 2){
+  bloom_reports <- "Frequent Blooms"
+} else{
+  bloom_reports <- "Periodic Blooms"
+}
+
+assess_df$habs_suscept[1] <- paste0(bloom_reports, ", ", habs_susceptibility)
 
 ##Make table
 make_assess_table <- assess_df %>% 

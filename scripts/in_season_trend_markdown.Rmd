@@ -1,0 +1,173 @@
+---
+output: html_document
+---
+### `r titles[1]` - In-Season Trend Analysis
+
+#### In Season Water Clarity
+
+```{r secchi_in_season, echo=FALSE, message=FALSE, warning=FALSE}
+#limiting data to only secchi records
+#adding sechi image
+#adding year day column
+secchi_season <- lake1 %>% 
+  filter(Characteristic.Name == "DEPTH, SECCHI DISK DEPTH") %>% 
+  mutate(image = "C:/Users/amtweitm/OneDrive - New York State Office of Information Technology Services/Documents/R/CSLAP_reporting/images/sec.png") %>% 
+    mutate(year_day = yday(SAMPLE_DATE))
+
+
+
+if(nrow(secchi_season) > 0){
+#making the result value a number instead of character
+secchi_season$Result.Value <- as.numeric(secchi_season$Result.Value)
+n_secchi <- nrow(secchi_season)
+secchi_season$decade <- 1
+secchi_season$year <- as.numeric(secchi_season$year)
+
+#assigning decade to each year for decadal average
+for(i in 1:n_secchi){
+  if (secchi_season$year[i] %in% c(1980,1981,1982,1983,1984,1985,1986,1987,1988,1989)) {
+  secchi_season$decade[i] <- "1980's Trendline"
+  }
+  else if (secchi_season$year[i] %in% c(1990,1991,1992,1993,1994,1995,1996,1997,1998,1999)) {
+  secchi_season$decade[i] <- "1990's Trendline"
+  }
+  else if (secchi_season$year[i] %in% c(2000,2001,2002,2003,2004,2005,2006,2007,2008,2009)) {
+  secchi_season$decade[i] <- "2000's Trendline"
+  }
+  else if (secchi_season$year[i] %in% c(2010,2011,2012,2013,2014,2015,2016,2017,2018,2019)) {
+  secchi_season$decade[i] <- "2010's Trendline"
+  }
+  else{
+    secchi_season$decade[i] <- "NA"
+  }
+}
+
+
+
+#creating df of just this year
+secchi_thisyear <- secchi_season %>% 
+  filter(year == report_year) %>% 
+  filter(Result.Value != "NA")
+
+#removing this year from past secchi data
+secchi_season <- secchi_season %>% 
+  filter(year!= report_year) %>% 
+  filter(Result.Value != "NA")
+
+secchi_season$decade <- as.factor(secchi_season$decade)
+
+#making result values into numeric
+secchi_thisyear$Result.Value <- as.numeric(secchi_thisyear$Result.Value)
+secchi_season$Result.Value <- as.numeric(secchi_season$Result.Value)
+
+#creating variable for adjusting y axis based on max secchi
+yaxis <- max(max(secchi_thisyear$Result.Value), max(secchi_season$Result.Value), 7)
+yaxis <- round(yaxis)
+
+#figure
+ggplot(data=secchi_thisyear, aes(x=year_day, y=Result.Value)) +
+  geom_smooth(data=secchi_season, aes(x=year_day, y=Result.Value, color=decade), se = FALSE) +
+  geom_point(aes(shape=as.factor(year)), size=5) +
+  scale_y_continuous(trans="reverse", limits=c(yaxis,0), expand = c(0,0)) +
+  theme_classic() +
+  scale_x_continuous(position = "top", breaks =  c(121, 152, 182, 213, 244, 274), 
+                     labels=c("May", "June", "July", "Aug", "Sept", "Oct")) +
+ geom_segment(aes(xend=year_day), yend=0, size=1) +
+  geom_image(aes(image=secchi_thisyear$image), size=.05) +
+  ylab("Secchi disk transparency (m)") +
+  xlab("") +
+  theme(legend.title = element_blank()) +
+  scale_shape_manual(values=10,
+                     label=paste(report_year, "Secchi Observations", sep=" ")) +
+  theme()
+}
+  
+```
+
+#### In Season Water Temperature
+
+```{r temp_in_season, echo=FALSE, message=FALSE, warning=FALSE}
+
+
+temp_ow_season <- lake1 %>% 
+  filter(Characteristic.Name == "TEMPERATURE, WATER") %>% 
+  mutate(year_day = yday(SAMPLE_DATE)) %>% 
+  filter(INFO_TYPE == "OW" | INFO_TYPE == "BS")
+
+if(nrow(temp_ow_season) > 0){
+temp_ow_thisyear <- temp_ow_season %>% 
+  filter(as.numeric(year) == as.numeric(report_year)) %>% 
+  filter(Result.Value != "NA")
+
+
+if(nrow(temp_ow_thisyear) >0){
+temp_ow_season$Result.Value <- as.numeric(temp_ow_season$Result.Value)
+n_temp_ow <- nrow(temp_ow_season)
+temp_ow_season$decade <- 1
+temp_ow_season$year <- as.numeric(temp_ow_season$year)
+
+
+#assigning decade to each year for decadal average
+for(i in 1:n_temp_ow){
+  if (temp_ow_season$year[i] %in% c(1980,1981,1982,1983,1984,1985,1986,1987,1988,1989)) {
+  temp_ow_season$decade[i] <- "1980's Trendline"
+  }
+  else if (temp_ow_season$year[i] %in% c(1990,1991,1992,1993,1994,1995,1996,1997,1998,1999)) {
+  temp_ow_season$decade[i] <- "1990's Trendline"
+  }
+  else if (temp_ow_season$year[i] %in% c(2000,2001,2002,2003,2004,2005,2006,2007,2008,2009)) {
+  temp_ow_season$decade[i] <- "2000's Trendline"
+  }
+  else if (temp_ow_season$year[i] %in% c(2010,2011,2012,2013,2014,2015,2016,2017,2018,2019)) {
+  temp_ow_season$decade[i] <- "2010's Trendline"
+  }
+  else{
+    temp_ow_season$decade[i] <- "NA"
+  }
+}
+
+
+
+
+#removing this year from past secchi data
+temp_ow_season <- temp_ow_season %>% 
+  filter(as.numeric(year)!= as.numeric(report_year)) %>% 
+  filter(Result.Value != "NA")
+
+temp_ow_season$decade <- as.factor(temp_ow_season$decade)
+
+#making result values into numeric
+temp_ow_thisyear$Result.Value <- as.numeric(temp_ow_thisyear$Result.Value)
+temp_ow_season$Result.Value <- as.numeric(temp_ow_season$Result.Value)
+temp_ow_thisyear$year <- as.numeric(temp_ow_thisyear$year)
+
+#making info type a factor and reordering for plotting purposes
+temp_ow_season$INFO_TYPE <- as.factor(temp_ow_season$INFO_TYPE)
+temp_ow_thisyear$INFO_TYPE <- as.factor(temp_ow_thisyear$INFO_TYPE)
+temp_ow_season$INFO_TYPE <- factor(temp_ow_season$INFO_TYPE, levels = c("OW", "BS"))
+temp_ow_thisyear$INFO_TYPE <- factor(temp_ow_thisyear$INFO_TYPE, levels = c("OW", "BS"))
+
+#creating new labels for facet wrapping
+temp.labs <- c("Surface Water Temperature", "Deep Water Temperature")
+names(temp.labs) <- c("OW", "BS")
+
+#figure
+#geom smooth won't work for any line in the facet if n<2
+#data for geom smooth is limited to groups where n>2
+ggplot(data=temp_ow_thisyear, aes(x=as.numeric(year_day), y=as.numeric(Result.Value)))  +
+  geom_smooth(data=temp_ow_season %>% group_by(INFO_TYPE, decade) %>%  filter(n() > 3), aes(x=as.numeric(year_day), y=as.numeric(Result.Value), color=decade), se = FALSE, method = "loess") +
+  geom_point(aes(shape=as.factor(year))) +
+  scale_y_continuous(limits=c(0,40), expand = c(0,0)) +
+  theme_classic() +
+  scale_x_continuous(breaks = c(121, 152, 182, 213, 244, 274, 305), 
+                     labels=c("May", "June", "July", "Aug", "Sept", "Oct", "Nov")) +
+  ylab("Degrees (C)") +
+  xlab("") +
+  theme(legend.title = element_blank()) +
+  scale_shape_manual(values=15,
+                     label=paste(report_year, "Observations", sep=" ")) +
+  facet_wrap(~INFO_TYPE, labeller=labeller(INFO_TYPE = temp.labs))
+  
+}
+}
+```

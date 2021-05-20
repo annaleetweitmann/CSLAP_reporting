@@ -1,5 +1,8 @@
 ---
 output: html_document
+editor_options: 
+  markdown: 
+    wrap: sentence
 ---
 
 ```{r setup, include=FALSE, message=FALSE, warning=FALSE}
@@ -36,21 +39,213 @@ dp<-data %>%
 ```{r, child= 'header_markdown.Rmd'}
 ```
 
+#  {.tabset}
+
+## `r report_year[1]` Sampling Results
+
+### `r titles[1]` -- `r report_year[1]` Sampling Season Results
+
+"Seasonal change" shows the current year variability.
+Red shaded results indicate eutrophic water quality conditions.
+"Season Median" is the middle value or average of the middle two values of the current year's ordered data.
+"Decadal Median" is the median of the most recent ten years of water quality data.
+"Longterm Median" is the median of all years of water quality data.
+"Decadal Trend?" and "Longterm Trend?" indicate whether there was a statistically significant change in the water quality data over the most recent ten years and all years, respectively.
+In these columns, 'No' indicates there was no significant trend, '↑' indicates there was a significant positive trend (p\<0.05), '↑↑' indicates there was a strong significant positive trend (p\<0.01), '↓' indicates there was a significant negative trend (p\<0.05), '↓↓' indicates there was a significant negative trend (p\<0.01), and blank indicates there was insufficient data to identify a trend.
+In this report, seasonal trend analyses for individual sampling years and long term trend analyses show changes in key water quality indicators over a consistent index period (mid-June thru mid-September).
+
 ```{r, child= 'season_results_tables_markdown.Rmd'}
+
 ```
 
-```{r, child= 'habs_table_markdown.Rmd'}
-```
+## Lake Scorecard
 
-```{r, child= 'figures_markdown.Rmd'}
-```
+### `r titles[1]` -- Lake Scorecard
 
 ```{r, child= 'report_card_markdown.Rmd'}
+
 ```
+
+## Lake Summary
+
+### `r titles[1]` -- `r report_year[1]` Lake Summary
 
 ```{r, child= 'lake_summary_markdown.Rmd'}
 ```
 
-```{r, child= 'how_to_glossary_markdown.Rmd'}
+## Harmful Algal Blooms
+
+```{r, child= 'habs_markdown.Rmd'}
 ```
 
+## In Season Trends
+
+```{r, child= 'in_season_trend_markdown.Rmd'}
+```
+
+## Longterm Trends
+
+```{r, child= 'longterm_trends_markdown.Rmd'}
+```
+
+## Resources
+
+### Water Quality Assessments
+
+The Waterbody Inventory/Priority Waterbodies List (WI/PWL) is a statewide inventory of New York's water resources that is used to track a waters ability to support its' best use(s), identify pollutant(s) causing impairment of best use(s), and follow the status of restoration, protection and other water quality activities and efforts.
+Data collected through CSLAP contributes to the WI/PWL.
+In order to be included as an assessment unit in the WI/PWL, a lake, pond, or reservoir must be at least 6.4 acres in size.
+To view current water quality assessment results:
+
+-   Visit <https://www.dec.ny.gov/pubs/109457.html> - follow the link to launch the DECinfo Locator
+
+-   Search for waterbody name, address or nearby landmark in the search tool at the top of the left banner
+
+-   Click and Expand the 'DEC Information Layers' tab of the left banner
+
+-   Click and expand the 'Environmental Monitoring' tab of the left banner
+
+-   Check the 'Lakes and Reservoirs' layer
+
+-   Click on the waterbody of interest in the map view to display a pop-up with more information about the waterbody
+
+-   Follow the 'Fact Sheet' link in the pop-up to learn more about the current use assessment of the waterbody
+
+### Lake Stewardship Actions
+
+Individual stewardship activities can help improve water quality: maintain your septic system, reduce fertilizer use, grow a buffer of native plants next to the lake shore, and reduce shoreline erosion and runoff into the lake.
+Visiting boats should be inspected to prevent the spread of invasive species, and continued community education about and monitoring for invasive species is recommended.
+Routine education about algae and harmful algal blooms (HABs) within your lake community is recommended; to learn more about HABs and see examples of HABs visit <http://www.dec.ny.gov/chemical/81962.html>.
+Occurrences of HABs can be reported to NYSDEC.
+For more information on keeping New York waters clean, visit <http://www.dec.ny.gov/public/43661.html>.
+
+## How to Read Report
+
+### How to Read the Report
+
+This guide provides a description of the CSLAP report by section and a glossary.
+The sampling site is indicated in the header for lakes with more than one routine sampling site.
+
+**Physical Characteristics influence lake quality:**
+
+-   Surface area is the lake's surface in acres and hectares.
+
+-   Max depth is the water depth measured at the deepest part of the lake in feet and meters.
+
+-   Mean depth is either known from lake bathymetry or is 0.46 of the maximum depth.
+
+-   Retention time is the time it takes for water to pass through a lake in years.
+    This indicates the influence of the watershed on lake conditions.
+
+-   Lake classification describes the "best uses" for this lake.
+    Class AA, AAspec, and A lakes may be used as sources of potable water.
+    Class B lakes are suitable for contact recreational activities, like swimming.
+    Class C lakes are suitable for non-contact recreational activities, including fishing, although they may still support swimming.
+    The addition of a T or TS to any of these classes indicates the ability of a lake to support trout populations and/or trout spawning.
+
+-   Dam classification defines the hazard class of a dam.
+    Class A, B, C, and D dams are defined as low, intermediate, high, or negligible/no hazard dams in that order.
+    "0" indicates that no class has been assigned to a particular dam, or that no dam exists.
+
+**Watershed characteristics influence lake water quality:**
+
+-   Watershed area in acres and hectares
+
+-   Land use data come from the most recent (2011) US Geological Survey National Land Use Cover dataset
+
+**CSLAP Participation lists the sampling years and the current year volunteers.**
+
+**Key lake status indicators summarize lake conditions:**
+
+-   Trophic state of a lake refers to its nutrient loading and productivity, measured by phosphorus, algae, and clarity.
+    An oligotrophic lake has low nutrient and algae levels (low productivity) and high clarity while a eutrophic lake has high nutrient and algae levels (high productivity) and low clarity.
+    Mesotrophic lakes fall in the middle.
+
+-   Harmful algal bloom susceptibility summarizes the available historical HAB data and indicates the potential for future HAB events.
+
+-   Invasive vulnerability indicates whether aquatic invasive species are found in this lake or in nearby lakes, indicating the potential for further introductions.
+
+-   Priority waterbody list (PWL) assessment is based on the assessment of use categories and summarized as fully supported, threatened, stressed, impaired, or precluded.
+    Aesthetics and habitat are evaluated as good, fair, or poor.
+    The cited PWL assessment reflects the "worst" assessment for the lake.
+
+**Current year sampling results** shows results for each of the sampling sessions in the year are in tabular form.
+The seasonal change graphically shows the current year results.
+Red shading indicates eutrophic readings.
+
+**Harmful Algal Blooms:**
+
+-   HAB notification periods on the DEC website <http://www.dec.ny.gov/chemical/83310.html>
+
+-   Shoreline HAB sample dates and results.
+    Samples are collected from the area that appears to have the worst bloom.
+    Red shading indicates a confirmed HAB.
+
+-   HAB sample algae analysis.
+    Algae types typically change during the season.
+    These charts show the amount of the different types of algae found in each mid-lake or shoreline sample.
+    Samples with high levels of BGA are HABs.
+    The second set of charts show the level of toxins found in open water and shoreline samples compared to NYSDOH and NYSDEC guidelines.
+
+-   If there are more than ten shoreline bloom samples collected in a year, bloom sample information is instead summarized by month (May-Oct.) as minimum, average, and maximum values for blue-green algae and microcystin.
+
+**The Lake Scorecard** represents key water quality indicator results for this lake in an easy-to-read format, comparing information from the current year and historical average of the CSLAP data.
+Indicators include (1) trophic status of phosphorus, chlorophyll (or algae) and secchi (or clarity); (2) presence or absence of aquatic invasive plants or animals; (3) lake user perception based on perceived physical condition and recreational suitability of the lake; (4) harmful algal bloom samples or reports; and (5) algae levels in the open water of routinely sampled sites.
+
+**The Lake Summary** reviews and encapsulates the data in the lake report, including comparisons to historical data from this lake, and results from nearby lakes.
+
+**In-Season Trend Analysis** shows water temperature and water clarity during the sampling season.
+These indicate seasonal changes and show the sample year results compared to the typical historical readings for those dates.
+
+**Long-Term Trend Analysis** puts the current year findings in context.
+Summer averages (mid-June thru mid-September) for each of the CSLAP years show trends in key water quality indicators.
+The graphs include relevant criteria (trophic categories, water quality standards, etc.) and boundaries separating these criteria.
+
+## Glossary
+
+### Glossary of Water Quality and HAB Indicators
+
+**Clarity (m):** The depth to which a Secchi disk lowered into the water is visible, measured in meters.
+Water clarity is one of the trophic indicators for each lake.
+
+**TP (mg/L):** Total phosphorus, measured in milligrams per liter at the lake surface (1.5 meters below the surface).
+TP includes all dissolved and particulate forms of phosphorus.
+
+**Deep TP:** Total phosphorus measured in milligrams per liter at depth (1-2 meters above the lake bottom at the deepest part of the lake or a fixed depth in the hypolimnion of very deep lakes).
+
+**TN:** Total nitrogen, measured in milligrams per liter at the lake surface.
+TN includes all forms of nitrogen, including NOx (nitrite and nitrate) and NH4 (ammonia).
+
+**N:P Ratio:** The ratio of total nitrogen to total phosphorus, unitless (mass ratio).
+This ratio helps determine if a lake is phosphorous or nitrogen limited.
+
+**Chl.a (μg/L):** Chlorophyll a, measured in micrograms per liter.
+Indicates the amount of algae in the water column.
+This is an extracted chlorophyll measurement.
+
+**pH:** A range from 0 to 14, with 0 being the most acidic and 14 being the most basic or alkaline.
+A healthy lake generally ranges between 6.5 and 8.5.
+
+**Cond (μmho/cm):** Specific conductance is a measure of the conductivity of water.
+A higher value indicates the presence of more dissolved ions.
+High ion concentrations (\> 250) usually indicate hardwater, and low readings (\< 125) usually show softwater.
+
+**Calcium (mg/L):** Calcium, a component of lake buffering capacity (the ability to neutralize acid inputs), as measured in milligrams per liter at the lake surface (1.5 meters below the surface).
+
+**Chloride (mg/L):** Chloride, or chloride ions, as measured in milligrams per liter at the lake surface (1.5 meters below the surface).
+
+**Upper Temp (°C):** Surface temperature, measured in degrees Celsius.
+
+**Deep Temp (°C):** Deep water temperature, measured in degrees Celsius.
+
+**BG Chl.a (μg/L):** Chlorophyll a from blue-green algae, measured in micrograms per liter.
+This is an "unextracted" estimate using a fluoroprobe.
+This result is different from the extracted chlorophyll measurement described above.
+
+**HABs:** Harmful Algal Blooms.
+Algal blooms that have the appearance of cyanobacteria (BGA).
+
+**BGA:** Blue-green algae, also known as cyanobacteria.
+
+**Microcystin (μg/L):** The most common HAB liver toxin; total microcystin above 20 micrograms per liter indicates a "high toxin" bloom.
+However, ALL BGA blooms pose a potential health risk and should be avoided.
